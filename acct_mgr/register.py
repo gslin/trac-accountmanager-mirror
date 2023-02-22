@@ -94,7 +94,7 @@ class BasicCheck(Component):
             raise RegistrationError(_("A username with only upper-cased "
                                       "characters is not allowed."))
 
-        # Prohibit some user names, that are important for Trac and therefor
+        # Prohibit some user names, that are important for Trac and therefore
         # reserved, even if not in the permission store for some reason.
         if username.lower() in ['anonymous', 'authenticated']:
             raise RegistrationError(tag_("Username %(username)s is not "
@@ -208,7 +208,7 @@ class EmailCheck(Component):
         insert = tag.label(_("Email:"),
                            tag.input(type='text', name='email', size=20,
                                      class_='textwidget', value=old_value))
-        # Deferred import required to aviod circular import dependencies.
+        # Deferred import required to avoid circular import dependencies.
         from acct_mgr.web_ui import AccountModule
         reset_password = AccountModule(self.env).reset_password_enabled
         verify_account = self.env.is_enabled(EmailVerificationModule) and \

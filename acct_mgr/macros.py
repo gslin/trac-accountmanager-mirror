@@ -64,7 +64,7 @@ parameters are:
  * '''locked''' -- alias for 'locked=True'
  * '''visit''' -- show a list of accounts with last-login information, only
  available in table format
- * '''name''' -- forces replacement of maching username with their
+ * '''name''' -- forces replacement of matching username with their
  corresponding full names, if available; adds a full names column if combined
  with 'visit'
  * '''email''' -- append email address to usernames, if available

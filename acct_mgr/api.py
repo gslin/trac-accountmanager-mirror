@@ -101,7 +101,7 @@ class IPasswordStore(Interface):
     def config_key():
         """'''Deprecated''': New implementations should not use this method.
 
-        The prefered way to configure an `IPasswordStore` implemenation is by
+        The preferred way to configure an `IPasswordStore` implementation is by
         using its class name in the `password_store` option.
 
         Returns a string used to identify this implementation in the config.
@@ -126,11 +126,11 @@ class IPasswordStore(Interface):
     def check_password(user, password):
         """Checks if the password is valid for the user.
 
-        Returns True, if the correct user and password are specfied.
+        Returns True, if the correct user and password are specified.
         Returns False, if the incorrect password was specified.
         Returns None, if the user doesn't exist in this password store.
 
-        Note: Returing `False` is an active rejection of the login attempt.
+        Note: Returning `False` is an active rejection of the login attempt.
         Return None to let the authentication eventually fall through to
         next store in a chain.
         """

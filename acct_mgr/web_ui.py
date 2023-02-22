@@ -143,7 +143,7 @@ class AccountModule(CommonTemplateProvider):
         if not req.authname or req.authname == 'anonymous':
             if req.path_info == '/prefs/account':
                 # An anonymous session has no account associated with it, and
-                # no account properies too, but general session preferences
+                # no account properties either, but general session preferences
                 # should always be available.
                 req.redirect(req.href.prefs())
             elif req.path_info == '/prefs/advanced' and req.method == 'POST':
@@ -299,7 +299,7 @@ class AccountModule(CommonTemplateProvider):
             try:
                 self.acctmgr.delete_user(username)
             except NotificationError, e:
-                # User wont care for notification, only care for logging here.
+                # User won't care for notification, but only for logging here.
                 self.log.error(
                     "Unable to send account deletion notification: "
                     "%s", exception_to_unicode(e, traceback=True))
@@ -422,7 +422,7 @@ class LoginModule(auth.LoginModule, CommonTemplateProvider):
         after processing login form input. Otherwise it will only be set,
         if unset at the time of authentication.""")
 
-    # Update cookies for persistant sessions only 1/day.
+    # Update cookies for persistent sessions only 1/day.
     #   hex_entropy returns 32 chars per call equal to 128 bit of entropy,
     #   so it should be technically impossible to explore the hash even within
     #   a year by just throwing forged HTTP requests at the server.
@@ -559,7 +559,7 @@ class LoginModule(auth.LoginModule, CommonTemplateProvider):
         name = None
         # Replicate _get_name_for_cookie() or _cookie_to_name() since Trac 1.0
         # adding special handling of persistent sessions, as the user may have
-        # a dynamic IP adress and this would lead to the user being logged out
+        # a dynamic IP address and this would lead to the user being logged out
         # due to an IP address conflict.
         if 'trac_auth_session' in req.incookie or True:
             sql = "SELECT name FROM auth_cookie WHERE cookie=%s AND ipnr=%s"
@@ -733,7 +733,7 @@ class LoginModule(auth.LoginModule, CommonTemplateProvider):
         """Determine "path" cookie property from setting or request object."""
         return self.auth_cookie_path or req.base_path or '/'
 
-    # Keep this code in a separate methode to be able to expire the session
+    # Keep this code in a separate method to be able to expire the session
     # cookie trac_auth_session independently of the trac_auth cookie.
     def _expire_session_cookie(self, req):
         """Instruct the user agent to drop the session cookie.

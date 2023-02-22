@@ -99,7 +99,7 @@ class RadiusAuthStore(Component):
         if pyrad.packet.AccessAccept == reply.code:
             self.log.debug("RADIUS Accept for username=%s", username)
             return True
-        # Rejection of login attempt, stopping further auth store interation.
+        # Rejection of login attempt, stopping further auth store interaction.
         elif pyrad.packet.AccessReject == reply.code:
             self.log.debug("RADIUS Reject for username=%s", username)
             return False

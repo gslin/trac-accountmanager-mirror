@@ -81,7 +81,7 @@ class AccountGuardTestCase(unittest.TestCase):
         self.assertEqual(self.guard.failed_count(user, ipnr), 2)
         # Read failed attempts.
         self.assertEqual(self.guard.failed_count(user, ipnr, None), 2)
-        # Reset failed attempts, returning deleted attemps.
+        # Reset failed attempts, returning deleted attempts.
         self.assertEqual(self.guard.failed_count(user, reset=True), 2)
         self.assertEqual(self.guard.failed_count(user, reset=None), 0)
 

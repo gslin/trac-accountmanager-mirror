@@ -39,7 +39,7 @@
           </span>
           <a href="$url" title="${step.image and step.label or None}">
           <img class="icon" alt="${step.label}" py:if="step.image"
-               heigth="32" width="32"
+               height="32" width="32"
                src="${href.chrome('/acct_mgr/' + step.image + '.png')}" />
           <py:if test="not step.image">$step.label</py:if>
           </a>
@@ -77,7 +77,7 @@
           </p>
           <p>
             After initial login Trac sessions are authenticated per request
-            based on browser cookies.  Therefor a number of options provide
+            based on browser cookies. Therefore a number of options provide
             control over some critical browser cookie properties.
           </p>
 
@@ -91,7 +91,7 @@
             </label>
             <p class="hint" i18n:msg="">
               Adapt to careless username typing, where casing does not matter,
-              like on Windows.  Potentially troublesome, because <tt>case
+              like on Windows. Potentially troublesome, because <tt>case
               matters for Trac permission assignment lookup</tt> anyway.
             </p>
           </div>
@@ -103,7 +103,7 @@
               Check IP address for authentication.
             </label>
             <p class="hint">
-              Potentially troublesome for users with dynamic IP adress, but
+              Potentially troublesome for users with dynamic IP address, but
               disregarded for persistent sessions.
             </p>
           </div>
@@ -140,7 +140,7 @@
             <p class="hint">
               Determines how long the browser will cache authentication
               information, and therefore, after how much inactivity a user
-              will have to log in again.  Default (0&nbsp;s) makes cookie
+              will have to log in again. Default (0&nbsp;s) makes cookie
               expire at browsing sessions end.
             </p>
           </div>
@@ -201,7 +201,7 @@
                 </ul>
                 <p class="hint">
                   that normally reside in Trac's meta-navigation bar, will
-                  appear inside the login form.  CSS styling allows further
+                  appear inside the login form. CSS styling allows further
                   customization of the login prompt.
                 </p>
               </i18n:msg>
@@ -230,7 +230,7 @@
               </label>
               <p class="hint" i18n:msg="">
                 Driving a refresh process to decrease vulnerability of
-                long-lasting sessions.  Zero means <strong>never</strong>.
+                long-lasting sessions. Zero means <strong>never</strong>.
               </p>
             </div>
             <div class="field">
@@ -284,7 +284,7 @@
                 </p>
                 <p class="hint">
                   While great to resolve some concurrent access issues too,
-                  this password store has shortcomings as well.  Notably it
+                  this password store has shortcomings as well. Notably it
                   does not support seamless hash type migration, and its no
                   candidate for shared use by multiple Trac instances or even
                   by applications beyond Trac.
@@ -396,7 +396,7 @@
                 </label>
                 <p class="hint" i18n:msg="">
                   AccountManagerPlugin enables use of standard HTTP-Auth
-                  by its <strong>HttpAuthStore</strong> component.  Both
+                  by its <strong>HttpAuthStore</strong> component. Both
                   Basic and Digest authentication challenges are supported.
                 </p>
                 <p class="hint">
@@ -428,9 +428,9 @@
                 <p class="hint">
                   AccountManagerPlugin's modular password store concept
                   encourages creation of more ways to provide user credential
-                  beyond the natively supported stores.  While specific setup
+                  beyond the natively supported stores. While a specific setup
                   assistance for these 3rd-party authentication providers is not
-                  implemented, you may fill-in approprate configuration details
+                  implemented, you may fill-in appropriate configuration details
                   for an already installed component below.
                 </p>
               </div>
@@ -524,7 +524,7 @@
                   primary password store.
                 </p>
                 <p class="hint">
-                  The update will run only once.  Restarting the procedure
+                  The update will run only once. Restarting the procedure
                   for all accounts allows to propagate subsequent changes.
                 </p>
                 <div class="buttons">
@@ -595,8 +595,8 @@
             <h3>Objective for Account Registration and Verification rules</h3>
             <p>
               You may require administrative approval of new accounts for the
-              user registration process.  The ability to immediately ban
-              existing accounts is another, related but independed feature.
+              user registration process. The ability to immediately ban
+              existing accounts is another, related but independent feature.
             </p>
             <div class="field">
               <label>
@@ -650,7 +650,7 @@
               Concurrent use of multiple registration checks is encouraged.
             </p>
             <p class="hint">
-              Checks are applied in turn, so order matters.  Note that some
+              Checks are applied in turn, so order matters. Note that some
               checks are used to validate admin user actions too.
             </p>
 
@@ -737,9 +737,9 @@
             <h3>Objective for Account Protection rules</h3>
             <p>
               Passwords are often not constructed as carefully as they should
-              be.  And even a strong passphrase could be sift out, if an
+              be. And even a strong passphrase could be sift out, if an
               attacker is able to test millions of variants in hours, if not
-              seconds.  Firewalls and full-featured web-servers already offer
+              seconds. Firewalls and full-featured web-servers already offer
               sophisticated protection, if one can afford them, handle their
               installation, configuration and maintenance.
             </p>
@@ -774,7 +774,7 @@
                 </label>
                 <p class="hint" i18n:msg="">
                   Lock user account after the specified number of failed
-                  attempts.  Value zero means <strong>no limit</strong>.
+                  attempts. Value zero means <strong>no limit</strong>.
                 </p>
               </div>
               <div id="user_lock_time">
@@ -806,7 +806,7 @@
                     </p>
                     <p class="hint">
                       Lock time will grow for any value > 1, if the failure
-                      happens before lock expiration.  I.e. value '2' means
+                      happens before lock expiration. I.e. value '2' means
                     </p>
                     <ul i18n:msg="">
                       <li><span class="hint">
@@ -866,9 +866,9 @@
                 <legend>Add Admin Account:</legend>
                 <p i18n:msg="">
                   The user will get <strong>TRAC_ADMIN</strong> assigned, that
-                  inherits all available permissions.  One such account is
-                  required to configure Trac via the admin web-UI.  Create and
-                  manage more limitted admin accounts as well as actual user
+                  inherits all available permissions. One such account is
+                  required to configure Trac via the admin web-UI. Create and
+                  manage more limited admin accounts as well as actual user
                   accounts on your own later via the Accounts admin panel.
                 </p>
                 <p class="hint" i18n:msg="">
@@ -877,7 +877,7 @@
                   administration, <strong>ACCTMGR_CONFIG_ADMIN</strong> for
                   viewing these pages and changing the configuration later.
                   Both are inherited by <strong>ACCTMGR_ADMIN</strong>
-                  permission.  To assign permissions you'll need
+                  permission. To assign permissions you'll need
                   <strong>PERMISSION_GRANT</strong> inherited by
                   <strong>PERMISSION_ADMIN</strong> too.
                 </p>
@@ -936,7 +936,7 @@
                 By now you did almost finish AccountManagerPlugin
                 configuration, but any changes are temporary yet. Please test
                 and adjust the configuration as required, or cancel to revert
-                all changes.  Apply settings to <em>trac.ini</em> only if you
+                all changes. Apply settings to <em>trac.ini</em> only if you
                 really want to preserve them permanently.
               </p>
               <!--! Final configuration preview listing -->

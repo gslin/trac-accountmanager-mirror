@@ -101,7 +101,7 @@ class AbstractPasswordFileStore(Component):
                 lines = f.readlines()
 
             # DEVEL: Beware, in shared use there is a race-condition,
-            #   since file changes by other programs that occure from now on
+            #   since file changes by other programs that occur from now on
             #   are currently not detected and will get overwritten.
             #   This could be fixed by file locking, but a cross-platform
             #   implementation is certainly non-trivial.
