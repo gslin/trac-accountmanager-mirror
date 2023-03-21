@@ -52,7 +52,7 @@ class HttpAuthStore(Component):
             urllib2.build_opener(HTTPBasicAuthHandler(acctmgr),
                                  urllib2.HTTPDigestAuthHandler(acctmgr))\
                    .open(auth_url)
-        except IOError, e:
+        except IOError as e:
             if hasattr(e, 'code') and e.code == 404:
                 self.log.debug("HttpAuthStore page not found; we are "
                                "authenticated nonetheless")

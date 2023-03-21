@@ -433,7 +433,7 @@ class AccountManager(Component):
             try:
                 self.log.debug("CHANGE_LISTENER: %s(%s)", repr(listener), mod)
                 getattr(listener, mod)(*args)
-            except AttributeError, e:
+            except AttributeError as e:
                 self.log.warning("IAccountChangeListener %s does not support "
                                  "method %s: %s", listener.__class__.__name__,
                                  mod, exception_to_unicode(e))

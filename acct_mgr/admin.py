@@ -769,7 +769,7 @@ class UserAdminPanel(Component):
 
             try:
                 acctmgr.validate_account(req)
-            except RegistrationError, e:
+            except RegistrationError as e:
                 add_warning(req, e)
                 if email:
                     set_user_attribute(self.env, old_uid, 'email', email)
@@ -815,7 +815,7 @@ class UserAdminPanel(Component):
         # Notify listeners about successful ID change.
         try:
             acctmgr._notify('id_changed', old_uid, new_uid)
-        except NotificationError, e:
+        except NotificationError as e:
             add_warning(req, _("Error raised while sending a change "
                                "notification.") +
                         _("You'll get details with TracLogging "
@@ -829,7 +829,7 @@ class UserAdminPanel(Component):
         try:
             result = self.acctmgr.set_password(username, password,
                                                overwrite=overwrite)
-        except NotificationError, e:
+        except NotificationError as e:
             add_warning(req, _("Error raised while sending a change "
                                "notification.") +
                         _("You'll get details with TracLogging enabled."))
@@ -842,7 +842,7 @@ class UserAdminPanel(Component):
         """Delete method, that handles notification errors gracefully."""
         try:
             self.acctmgr.delete_user(username)
-        except NotificationError, e:
+        except NotificationError as e:
             add_warning(req, _("Error raised while sending a change "
                                "notification.") +
                         _("You'll get details with TracLogging "
@@ -911,7 +911,7 @@ class ConfigurationAdminPanel(Component):
             """Convenience function from trac.admin.web_ui."""
             try:
                 return format_to_html(env, context, text)
-            except Exception, e:
+            except Exception as e:
                 self.log.error('Unable to render component documentation: %s',
                                exception_to_unicode(e, traceback=True))
             return tag.pre(text)
@@ -1220,7 +1220,7 @@ class ConfigurationAdminPanel(Component):
                     value = None
                     try:
                         opt_val = option.__get__(store, store)
-                    except AttributeError, e:
+                    except AttributeError as e:
                         env.log.error(e)
                         regexp = r'^.* interface named \"(.*?)\".*$'
                         error = _("Error while reading configuration - Hint: "
@@ -1348,7 +1348,7 @@ class ConfigurationAdminPanel(Component):
                 value = None
                 try:
                     opt_val = option.__get__(check, check)
-                except AttributeError, e:
+                except AttributeError as e:
                     env.log.error(e)
                     regexp = r'^.* interface named \"(.*?)\".*$'
                     error = _("Error while reading configuration - "
@@ -1565,14 +1565,14 @@ def _add_user_account(env, req):
                     set_user_attribute(env, account['username'],
                                        'email_verification_sent_to',
                                        account['email'])
-            except NotificationError, e:
+            except NotificationError as e:
                 add_warning(req, _("Error raised while sending a change "
                                    "notification.") +
                             _("You'll get details with TracLogging "
                               "enabled."))
                 env.log.error('Unable to send change notification: %s',
                               exception_to_unicode(e, traceback=True))
-            except RegistrationError, e:
+            except RegistrationError as e:
                 add_warning(req, e)
             else:
                 add_notice(req, tag_(

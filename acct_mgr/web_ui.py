@@ -298,7 +298,7 @@ class AccountModule(Component):
         else:
             try:
                 self.acctmgr.delete_user(username)
-            except NotificationError, e:
+            except NotificationError as e:
                 # User won't care for notification, but only for logging here.
                 self.log.error(
                     "Unable to send account deletion notification: "
@@ -343,7 +343,7 @@ class AccountModule(Component):
         new_password = self._random_password
         try:
             self.store.set_password(username, new_password)
-        except Exception, e:
+        except Exception as e:
             add_warning(req, _("Cannot reset password: %(error)s",
                                error=exception_to_unicode(e)))
             self.log.error("Unable to reset password: %s",
@@ -351,7 +351,7 @@ class AccountModule(Component):
             return
         try:
             acctmgr._notify('password_reset', username, email, new_password)
-        except NotificationError, e:
+        except NotificationError as e:
             msg = _("Error raised while sending a change notification.")
             if req.path_info.startswith('/admin'):
                 msg += _("You'll get details with TracLogging enabled.")
@@ -724,7 +724,7 @@ class LoginModule(auth.LoginModule):
                                       local_env_name)
                         self.log.debug("Auth distribution success: %s",
                                        env_name)
-                except Exception, e:
+                except Exception as e:
                     self.log.debug("Auth distribution skipped for env %s: %s",
                                    env_name,
                                    exception_to_unicode(e, traceback=True))
@@ -802,7 +802,7 @@ def _set_password(env, req, username, password, old_password=None):
     try:
         AccountManager(env).set_password(username, password,
                                          old_password=old_password)
-    except NotificationError, e:
+    except NotificationError as e:
         add_warning(req, _("Error raised while sending a change "
                            "notification.") +
                     _("You should report that issue to a Trac admin."))

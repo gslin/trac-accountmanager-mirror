@@ -62,7 +62,7 @@ class PrimitiveUserIdChanger(GenericUserIdChanger):
                 self.log.debug(self.msg(old_uid, new_uid, self.table,
                                         self.column,
                                         result='%s time(s)' % result))
-        except _get_db_exc(self.env), e:
+        except _get_db_exc(self.env) as e:
             result = exception_to_unicode(e)
             msg = 'failed: %s' % exception_to_unicode(e, traceback=True)
             self.log.debug(self.msg(old_uid, new_uid, self.table,
@@ -84,7 +84,7 @@ class UniqueUserIdChanger(PrimitiveUserIdChanger):
             self.env.db_transaction("""
                 DELETE FROM %s WHERE %s=%%s
                 """ % (self.table, self.column), (new_uid,))
-        except _get_db_exc(self.env), e:
+        except _get_db_exc(self.env) as e:
             result = exception_to_unicode(e)
             msg = 'failed: %s' % exception_to_unicode(e, traceback=True)
             self.log.debug(self.msg(old_uid, new_uid, self.table,
@@ -168,7 +168,7 @@ class TicketUserIdChanger(PrimitiveUserIdChanger):
                         db("UPDATE ticket SET cc=%s WHERE id=%s",
                            (', '.join(cc), int(row[0])))
                         result += 1
-                    except _get_db_exc(self.env), e:
+                    except _get_db_exc(self.env) as e:
                         result = exception_to_unicode(e)
                         msg = 'failed: %s' \
                               % exception_to_unicode(e, traceback=True)
@@ -203,7 +203,7 @@ class TicketUserIdChanger(PrimitiveUserIdChanger):
                             WHERE %s=%%s AND
                              (field='owner' OR field='reporter')
                             """ % (table, column, column), (new_uid, old_uid))
-                    except _get_db_exc(self.env), e:
+                    except _get_db_exc(self.env) as e:
                         result = exception_to_unicode(e)
                         msg = 'failed: %s' % \
                               exception_to_unicode(e, traceback=True)
@@ -236,7 +236,7 @@ class TicketUserIdChanger(PrimitiveUserIdChanger):
                                 """ % (table, column),
                                (', '.join(cc), int(row[0]), int(row[1])))
                             result += 1
-                        except _get_db_exc(self.env), e:
+                        except _get_db_exc(self.env) as e:
                             result = exception_to_unicode(e)
                             msg = 'failed: %s' % \
                                   exception_to_unicode(e, traceback=True)
