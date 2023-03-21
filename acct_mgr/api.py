@@ -9,7 +9,7 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
-from pkg_resources import resource_filename
+from pkg_resources import resource_filename, resource_isdir
 
 from trac.config import BoolOption
 from trac.config import Option, OrderedExtensionsOption
@@ -226,8 +226,9 @@ class AccountManager(Component):
 
     def __init__(self):
         # Bind the 'acct_mgr' catalog to the specified locale directory.
-        locale_dir = resource_filename(__name__, 'locale')
-        add_domain(self.env.path, locale_dir)
+        if resource_isdir(__name__, 'locale'):
+            locale_dir = resource_filename(__name__, 'locale')
+            add_domain(self.env.path, locale_dir)
 
     # Public API
 
