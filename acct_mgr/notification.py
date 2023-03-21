@@ -20,8 +20,7 @@ from trac.util.text import exception_to_unicode
 from trac.util.translation import deactivate, reactivate
 from trac.web.chrome import Chrome
 
-from acct_mgr.api import (
-    IAccountChangeListener, CommonTemplateProvider, _, dgettext)
+from acct_mgr.api import IAccountChangeListener, _, dgettext
 from acct_mgr.compat import genshi_template_args
 
 
@@ -187,7 +186,7 @@ class AccountNotificationFormatter(Component):
         reactivate(t)
 
 
-class AccountChangeNotificationAdminPanel(CommonTemplateProvider):
+class AccountChangeNotificationAdminPanel(Component):
     implements(IAdminPanelProvider)
 
     # IAdminPageProvider methods

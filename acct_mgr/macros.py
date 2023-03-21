@@ -8,7 +8,7 @@
 #
 # Author: Steffen Hoffmann <hoff.st@web.de>
 
-from trac.core import implements
+from trac.core import Component, implements
 from trac.perm import PermissionSystem
 from trac.util.html import html as tag
 from trac.web.chrome import Chrome
@@ -16,11 +16,11 @@ from trac.wiki.api import IWikiMacroProvider, WikiSystem, parse_args
 from trac.wiki.formatter import format_to_oneliner
 
 from acct_mgr.admin import fetch_user_data
-from acct_mgr.api import AccountManager, CommonTemplateProvider, tag_
+from acct_mgr.api import AccountManager, tag_
 from acct_mgr.guard import AccountGuard
 
 
-class AccountManagerWikiMacros(CommonTemplateProvider):
+class AccountManagerWikiMacros(Component):
     """Provides wiki macros related to Trac accounts/authenticated users."""
 
     implements(IWikiMacroProvider)

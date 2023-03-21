@@ -16,7 +16,7 @@ import time
 from trac.attachment import IAttachmentManipulator
 from trac.config import BoolOption, ConfigurationError
 from trac.config import IntOption, Option
-from trac.core import implements
+from trac.core import Component, implements
 from trac.env import open_environment
 from trac.prefs import IPreferencePanelProvider
 from trac.ticket.api import ITicketManipulator
@@ -30,7 +30,7 @@ from trac.web.chrome import add_warning
 from trac.web.main import IRequestHandler, IRequestFilter, get_environments
 from trac.wiki.api import IWikiPageManipulator
 
-from acct_mgr.api import AccountManager, CommonTemplateProvider
+from acct_mgr.api import AccountManager
 from acct_mgr.api import _, dgettext, ngettext, tag_
 from acct_mgr.compat import genshi_template_args
 from acct_mgr.db import SessionStore
@@ -49,7 +49,7 @@ class ResetPwStore(SessionStore):
         self.key = 'password_reset'
 
 
-class AccountModule(CommonTemplateProvider):
+class AccountModule(Component):
     """Exposes methods for users to do account management on their own.
 
     Allows users to change their password, reset their password, if they've
@@ -372,7 +372,7 @@ class AccountModule(CommonTemplateProvider):
             req.redirect(req.href.login())
 
 
-class LoginModule(auth.LoginModule, CommonTemplateProvider):
+class LoginModule(auth.LoginModule):
     """Custom login form and processing.
 
     This is woven with the trac.auth.LoginModule it inherits and overwrites.

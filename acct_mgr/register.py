@@ -13,7 +13,7 @@ import base64
 import os
 import re
 
-from acct_mgr.api import AccountManager, CommonTemplateProvider
+from acct_mgr.api import AccountManager
 from acct_mgr.api import IAccountRegistrationInspector
 from acct_mgr.api import _, N_, cleandoc_, dgettext, tag_
 from acct_mgr.model import email_associated, get_user_attribute
@@ -347,7 +347,7 @@ class UsernamePermCheck(Component):
                     username=tag.b(username)))
 
 
-class RegistrationModule(CommonTemplateProvider):
+class RegistrationModule(Component):
     """Provides users the ability to register a new account.
 
     Requires configuration of the AccountManager module in trac.ini.
@@ -500,7 +500,7 @@ class RegistrationModule(CommonTemplateProvider):
         return 'account_register.html', data, None
 
 
-class EmailVerificationModule(CommonTemplateProvider):
+class EmailVerificationModule(Component):
     """Performs email verification on every new or changed address.
 
     A working email sender for Trac (!TracNotification or !TracAnnouncer)

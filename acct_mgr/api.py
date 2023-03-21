@@ -170,7 +170,8 @@ class AccountManager(Component):
     stores, and if so, then each password store is queried in turn.
     """
 
-    implements(IAccountChangeListener, IPermissionRequestor, IRequestFilter)
+    implements(IAccountChangeListener, IPermissionRequestor, IRequestFilter,
+               ITemplateProvider)
 
     change_listeners = ExtensionPoint(IAccountChangeListener)
 
@@ -219,6 +220,9 @@ class AccountManager(Component):
         'account-manager', 'username_char_blacklist', ':[]',
         doc="""Always exclude some special characters from usernames.
             This is enforced upon new user registration.""")
+
+    _htdocs_dir = resource_filename(__name__, 'htdocs')
+    _templates_dir = resource_filename(__name__, 'templates')
 
     def __init__(self):
         # Bind the 'acct_mgr' catalog to the specified locale directory.
@@ -485,27 +489,19 @@ class AccountManager(Component):
                    (action[1], action[2:]), action[3]]
         return actions
 
-
-class CommonTemplateProvider(Component):
-    """Generic template provider."""
-
-    implements(ITemplateProvider)
-
-    abstract = True
-
     # ITemplateProvider methods
 
     def get_htdocs_dirs(self):
         """Return the absolute path of a directory containing additional
         static resources (such as images, style sheets, etc).
         """
-        return [('acct_mgr', resource_filename(__name__, 'htdocs'))]
+        yield 'acct_mgr', self._htdocs_dir
 
     def get_templates_dirs(self):
         """Return the absolute path of the directory containing the provided
         Genshi templates.
         """
-        return [resource_filename(__name__, 'templates')]
+        yield self._templates_dir
 
 
 class GenericUserIdChanger(Component):

@@ -12,7 +12,7 @@
 import inspect
 import re
 
-from acct_mgr.api import AccountManager, CommonTemplateProvider
+from acct_mgr.api import AccountManager
 from acct_mgr.api import IUserIdChanger
 from acct_mgr.api import _, dgettext, gettext, ngettext, tag_
 from acct_mgr.compat import genshi_template_args
@@ -196,7 +196,7 @@ class ExtensionOrder(dict):
         return len(self.get_all_components())
 
 
-class UserAdminPanel(CommonTemplateProvider):
+class UserAdminPanel(Component):
     implements(IAdminPanelProvider)
 
     uid_changers = ExtensionPoint(IUserIdChanger)
@@ -881,7 +881,7 @@ class UserAdminPanel(CommonTemplateProvider):
                     page_href=page_href)
 
 
-class ConfigurationAdminPanel(CommonTemplateProvider):
+class ConfigurationAdminPanel(Component):
     implements(IAdminPanelProvider, IAuthenticator)
 
     auth_init = BoolOption('account-manager', 'auth_init', True,
