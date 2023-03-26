@@ -1,22 +1,22 @@
 # Translations template for TracAccountManager.
-# Copyright (C) 2018 ORGANIZATION
+# Copyright (C) 2023 ORGANIZATION
 # This file is distributed under the same license as the
 # TracAccountManager project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: TracAccountManager 0.5.1\n"
+"Project-Id-Version: TracAccountManager 0.6\n"
 "Report-Msgid-Bugs-To: hoff.st@shaas.net\n"
-"POT-Creation-Date: 2018-06-21 22:46-0700\n"
+"POT-Creation-Date: 2023-03-26 08:58+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.6.0\n"
+"Generated-By: Babel 2.9.1\n"
 
 #: acct_mgr/admin.py:59
 #, python-format
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Invalid key type (%s) for ExtensionOrder"
 msgstr ""
 
-#: acct_mgr/admin.py:214 acct_mgr/admin.py:901 acct_mgr/notification.py:192
+#: acct_mgr/admin.py:214 acct_mgr/admin.py:901 acct_mgr/notification.py:196
 #: acct_mgr/templates/account_users.html:14
 #: acct_mgr/templates/account_users.html:158
 msgid "Accounts"
@@ -198,14 +198,14 @@ msgid ""
 msgstr ""
 
 #: acct_mgr/admin.py:819 acct_mgr/admin.py:833 acct_mgr/admin.py:846
-#: acct_mgr/admin.py:1569 acct_mgr/register.py:430 acct_mgr/register.py:447
-#: acct_mgr/register.py:588 acct_mgr/register.py:624 acct_mgr/web_ui.py:347
-#: acct_mgr/web_ui.py:810
+#: acct_mgr/admin.py:1569 acct_mgr/register.py:428 acct_mgr/register.py:445
+#: acct_mgr/register.py:586 acct_mgr/register.py:622 acct_mgr/web_ui.py:355
+#: acct_mgr/web_ui.py:806
 msgid "Error raised while sending a change notification."
 msgstr ""
 
 #: acct_mgr/admin.py:821 acct_mgr/admin.py:835 acct_mgr/admin.py:848
-#: acct_mgr/admin.py:1571 acct_mgr/web_ui.py:349
+#: acct_mgr/admin.py:1571 acct_mgr/web_ui.py:357
 msgid "You'll get details with TracLogging enabled."
 msgstr ""
 
@@ -296,27 +296,25 @@ msgstr ""
 msgid "Account %(username)s created."
 msgstr ""
 
-#: acct_mgr/api.py:256
+#: acct_mgr/api.py:261
 #, python-format
 msgid ""
 "The authentication backend for user %(user)s does not support setting"
 " the password."
 msgstr ""
 
-#: acct_mgr/api.py:273
+#: acct_mgr/api.py:278
 #, python-format
 msgid "Password for user %s existed, couldn't create."
 msgstr ""
 
-#: acct_mgr/api.py:278
+#: acct_mgr/api.py:283
 msgid ""
-"None of the IPasswordStore components listed in the\n"
-"                trac.ini supports setting the password or creating "
-"users.\n"
-"                "
+"None of the IPasswordStore components listed in the trac.ini supports"
+" setting the password or creating users."
 msgstr ""
 
-#: acct_mgr/api.py:468
+#: acct_mgr/api.py:472
 msgid ""
 "Account is pending approval. You may need to contact your "
 "administrator."
@@ -329,16 +327,14 @@ msgstr ""
 
 #: acct_mgr/htfile.py:140
 msgid ""
-"The password file could not be read. Trac requires\n"
-"                    read and write access to both the password file\n"
-"                    and its parent directory."
+"The password file could not be read. Trac requires read and write "
+"access to both the password file and its parent directory."
 msgstr ""
 
 #: acct_mgr/htfile.py:158
 msgid ""
-"The password file could not be updated. Trac requires\n"
-"                    read and write access to both the password file\n"
-"                    and its parent directory."
+"The password file could not be updated. Trac requires read and write "
+"access to both the password file and its parent directory."
 msgstr ""
 
 #: acct_mgr/macros.py:92
@@ -346,11 +342,7 @@ msgstr ""
 msgid "(required %(perm)s missing)"
 msgstr ""
 
-#: acct_mgr/notification.py:55
-msgid "The email and username do not match a known account."
-msgstr ""
-
-#: acct_mgr/notification.py:193
+#: acct_mgr/notification.py:197
 msgid "Notification"
 msgstr ""
 
@@ -360,10 +352,8 @@ msgstr ""
 
 #: acct_mgr/pwhash.py:137
 msgid ""
-"Neither are \"sha2\" hash algorithms supported by the\n"
-"                    \"crypt\" module on this platform nor is "
-"\"passlib\"\n"
-"                    available."
+"Neither are \"sha2\" hash algorithms supported by the \"crypt\" "
+"module on this platform nor is \"passlib\" available."
 msgstr ""
 
 #: acct_mgr/register.py:36
@@ -403,7 +393,7 @@ msgstr ""
 msgid "Username %(username)s is not allowed."
 msgstr ""
 
-#: acct_mgr/register.py:115 acct_mgr/register.py:347
+#: acct_mgr/register.py:115 acct_mgr/register.py:345
 #, python-format
 msgid ""
 "Another account or group already exists, who's name differs from "
@@ -461,39 +451,34 @@ msgstr ""
 #. TRANSLATOR: Registration form hints for a mandatory input field.
 #: acct_mgr/register.py:218
 msgid ""
-"\n"
-"                The email address is required for Trac to send you a\n"
-"                verification token.\n"
-"                "
+"The email address is required for Trac to send you a verification "
+"token."
 msgstr ""
 
-#: acct_mgr/register.py:223
+#: acct_mgr/register.py:221
 msgid ""
-"\n"
-"                    Entering your email address will also enable you "
-"to reset\n"
-"                    your password if you ever forget it.\n"
-"                    "
+"Entering your email address will also enable you to reset your "
+"password if you ever forget it."
 msgstr ""
 
 #. TRANSLATOR: Registration form hint, if email input is optional.
-#: acct_mgr/register.py:230
+#: acct_mgr/register.py:228
 msgid ""
-"Entering your email address will enable you to\n"
-"                           reset your password if you ever forget it."
+"Entering your email address will enable you to reset your password if"
+" you ever forget it."
 msgstr ""
 
-#: acct_mgr/register.py:244
+#: acct_mgr/register.py:242
 msgid "You must specify a valid email address."
 msgstr ""
 
-#: acct_mgr/register.py:251
+#: acct_mgr/register.py:249
 msgid ""
 "The email address specified is already in use. Please specify a "
 "different one."
 msgstr ""
 
-#: acct_mgr/register.py:261
+#: acct_mgr/register.py:259
 msgid ""
 "A collection of checks based on regular expressions.\n"
 "\n"
@@ -503,48 +488,48 @@ msgid ""
 "disabled.''"
 msgstr ""
 
-#: acct_mgr/register.py:295
+#: acct_mgr/register.py:293
 #, python-format
 msgid "Username %(username)s doesn't match local naming policy."
 msgstr ""
 
-#: acct_mgr/register.py:305
+#: acct_mgr/register.py:303
 msgid ""
 "The email address specified appears to be invalid. Please specify a "
 "valid email address."
 msgstr ""
 
-#: acct_mgr/register.py:315
+#: acct_mgr/register.py:313
 msgid ""
 "Check for usernames referenced in the permission system.\n"
 "\n"
 "''This check is bypassed for requests by an authenticated user.''"
 msgstr ""
 
-#: acct_mgr/register.py:394 acct_mgr/templates/account_login.html:58
+#: acct_mgr/register.py:392 acct_mgr/templates/account_login.html:58
 #: acct_mgr/templates/account_login.html:61
 #: acct_mgr/templates/account_register.html:14
 msgid "Register"
 msgstr ""
 
-#: acct_mgr/register.py:409 acct_mgr/register.py:413
+#: acct_mgr/register.py:407 acct_mgr/register.py:411
 msgid "Invalid request arguments."
 msgstr ""
 
-#: acct_mgr/register.py:432 acct_mgr/register.py:449
-#: acct_mgr/register.py:590 acct_mgr/register.py:625 acct_mgr/web_ui.py:351
-#: acct_mgr/web_ui.py:812
+#: acct_mgr/register.py:430 acct_mgr/register.py:447
+#: acct_mgr/register.py:588 acct_mgr/register.py:623 acct_mgr/web_ui.py:359
+#: acct_mgr/web_ui.py:808
 msgid "You should report that issue to a Trac admin."
 msgstr ""
 
-#: acct_mgr/register.py:455
+#: acct_mgr/register.py:453
 msgid ""
 "Your username has been registered successfully, but your account "
 "requires administrative approval. Please proceed according to local "
 "policy."
 msgstr ""
 
-#: acct_mgr/register.py:465
+#: acct_mgr/register.py:463
 #, python-format
 msgid ""
 "Your username has been successfully registered but your account still"
@@ -552,7 +537,7 @@ msgid ""
 "instructions."
 msgstr ""
 
-#: acct_mgr/register.py:470
+#: acct_mgr/register.py:468
 #, python-format
 msgid ""
 "Registration has been finished successfully. You may log in as user "
@@ -560,46 +545,46 @@ msgid ""
 msgstr ""
 
 #. TRANSLATOR: Your permissions have been limited until you ...
-#: acct_mgr/register.py:560
+#: acct_mgr/register.py:558
 msgid "verify your email address"
 msgstr ""
 
 #. TRANSLATOR: ... verify your email address
-#: acct_mgr/register.py:564
+#: acct_mgr/register.py:562
 #, python-format
 msgid "Your permissions have been limited until you %(link)s."
 msgstr ""
 
 #. TRANSLATOR: An email has been sent to <%(email)s>
 #. with a token to ... (the link label for following message)
-#: acct_mgr/register.py:596
+#: acct_mgr/register.py:594
 msgid "verify your new email address"
 msgstr ""
 
 #. TRANSLATOR: ... verify your new email address
-#: acct_mgr/register.py:601
+#: acct_mgr/register.py:599
 #, python-format
 msgid "An email has been sent to <%(email)s> with a token to %(link)s."
 msgstr ""
 
-#: acct_mgr/register.py:611
+#: acct_mgr/register.py:609
 msgid "Please log in to finish email verification procedure."
 msgstr ""
 
-#: acct_mgr/register.py:615
+#: acct_mgr/register.py:613
 msgid "Your email is already verified."
 msgstr ""
 
-#: acct_mgr/register.py:631
+#: acct_mgr/register.py:629
 #, python-format
 msgid "A notification email has been resent to <%s>."
 msgstr ""
 
-#: acct_mgr/register.py:639
+#: acct_mgr/register.py:637
 msgid "Thank you for verifying your email address."
 msgstr ""
 
-#: acct_mgr/register.py:642
+#: acct_mgr/register.py:640
 msgid "Invalid verification token"
 msgstr ""
 
@@ -706,34 +691,35 @@ msgstr ""
 msgid "Email is required."
 msgstr ""
 
-#: acct_mgr/web_ui.py:324
+#: acct_mgr/web_ui.py:325
 msgid "Email and username must match a known account."
 msgstr ""
 
-#: acct_mgr/web_ui.py:357
+#: acct_mgr/web_ui.py:348
 #, python-format
 msgid "Cannot reset password: %(error)s"
 msgstr ""
 
-#: acct_mgr/web_ui.py:364
+#: acct_mgr/web_ui.py:370
 #, python-format
 msgid "A new password has been sent to you at <%(email)s>."
 msgstr ""
 
 #. TRANSLATOR: Intentionally obfuscated login error
-#: acct_mgr/web_ui.py:521
+#: acct_mgr/web_ui.py:526
 msgid "Invalid username or password"
 msgstr ""
 
-#: acct_mgr/web_ui.py:529
-msgid "Account locked, please try again after % (release_time)s"
+#: acct_mgr/web_ui.py:534
+#, python-format
+msgid "Account locked, please try again after %(release_time)s"
 msgstr ""
 
-#: acct_mgr/templates/account_user_table.html:45 acct_mgr/web_ui.py:532
+#: acct_mgr/templates/account_user_table.html:45 acct_mgr/web_ui.py:537
 msgid "Account locked"
 msgstr ""
 
-#: acct_mgr/web_ui.py:537
+#: acct_mgr/web_ui.py:542
 #, python-format
 msgid "Login after %(attempts)s failed attempt"
 msgid_plural "Login after %(attempts)s failed attempts"
@@ -752,9 +738,14 @@ msgstr ""
 msgid "Manage User Account"
 msgstr ""
 
-#: acct_mgr/templates/account_admin.html:27
-#: acct_mgr/templates/account_admin.html:30
-msgid "for"
+#: acct_mgr/templates/account_admin.html:28
+#, python-format
+msgid "for [1:%(name)s] ([2:%(user)s])"
+msgstr ""
+
+#: acct_mgr/templates/account_admin.html:31
+#, python-format
+msgid "for [1:%(user)s]"
 msgstr ""
 
 #: acct_mgr/templates/account_admin.html:33
@@ -1037,7 +1028,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:78
 msgid ""
 "After initial login Trac sessions are authenticated per request\n"
-"            based on browser cookies.  Therefor a number of options "
+"            based on browser cookies. Therefore a number of options "
 "provide\n"
 "            control over some critical browser cookie properties."
 msgstr ""
@@ -1053,7 +1044,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:92
 msgid ""
 "Adapt to careless username typing, where casing does not matter,\n"
-"              like on Windows.  Potentially troublesome, because "
+"              like on Windows. Potentially troublesome, because "
 "[1:case\n"
 "              matters for Trac permission assignment lookup] anyway."
 msgstr ""
@@ -1064,7 +1055,7 @@ msgstr ""
 
 #: acct_mgr/templates/account_config.html:105
 msgid ""
-"Potentially troublesome for users with dynamic IP adress, but\n"
+"Potentially troublesome for users with dynamic IP address, but\n"
 "              disregarded for persistent sessions."
 msgstr ""
 
@@ -1092,7 +1083,7 @@ msgid ""
 "Determines how long the browser will cache authentication\n"
 "              information, and therefore, after how much inactivity a"
 " user\n"
-"              will have to log in again.  Default (0 s) makes cookie\n"
+"              will have to log in again. Default (0 s) makes cookie\n"
 "              expire at browsing sessions end."
 msgstr ""
 
@@ -1159,7 +1150,7 @@ msgid ""
 "                [7:\n"
 "                  that normally reside in Trac's meta-navigation bar,"
 " will\n"
-"                  appear inside the login form.  CSS styling allows "
+"                  appear inside the login form. CSS styling allows "
 "further\n"
 "                  customization of the login prompt.\n"
 "                ]"
@@ -1191,7 +1182,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:231
 msgid ""
 "Driving a refresh process to decrease vulnerability of\n"
-"                long-lasting sessions.  Zero means [1:never]."
+"                long-lasting sessions. Zero means [1:never]."
 msgstr ""
 
 #: acct_mgr/templates/account_config.html:237
@@ -1245,7 +1236,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:285
 msgid ""
 "While great to resolve some concurrent access issues too,\n"
-"                  this password store has shortcomings as well.  "
+"                  this password store has shortcomings as well. "
 "Notably it\n"
 "                  does not support seamless hash type migration, and "
 "its no\n"
@@ -1330,7 +1321,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:397
 msgid ""
 "AccountManagerPlugin enables use of standard HTTP-Auth\n"
-"                  by its [1:HttpAuthStore] component.  Both\n"
+"                  by its [1:HttpAuthStore] component. Both\n"
 "                  Basic and Digest authentication challenges are "
 "supported."
 msgstr ""
@@ -1350,11 +1341,11 @@ msgid ""
 "AccountManagerPlugin's modular password store concept\n"
 "                  encourages creation of more ways to provide user "
 "credential\n"
-"                  beyond the natively supported stores.  While "
+"                  beyond the natively supported stores. While a "
 "specific setup\n"
 "                  assistance for these 3rd-party authentication "
 "providers is not\n"
-"                  implemented, you may fill-in approprate "
+"                  implemented, you may fill-in appropriate "
 "configuration details\n"
 "                  for an already installed component below."
 msgstr ""
@@ -1414,7 +1405,7 @@ msgstr ""
 
 #: acct_mgr/templates/account_config.html:526
 msgid ""
-"The update will run only once.  Restarting the procedure\n"
+"The update will run only once. Restarting the procedure\n"
 "                  for all accounts allows to propagate subsequent "
 "changes."
 msgstr ""
@@ -1474,9 +1465,9 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:596
 msgid ""
 "You may require administrative approval of new accounts for the\n"
-"              user registration process.  The ability to immediately "
+"              user registration process. The ability to immediately "
 "ban\n"
-"              existing accounts is another, related but independed "
+"              existing accounts is another, related but independent "
 "feature."
 msgstr ""
 
@@ -1529,7 +1520,7 @@ msgstr ""
 
 #: acct_mgr/templates/account_config.html:652
 msgid ""
-"Checks are applied in turn, so order matters.  Note that some\n"
+"Checks are applied in turn, so order matters. Note that some\n"
 "              checks are used to validate admin user actions too."
 msgstr ""
 
@@ -1572,11 +1563,11 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:738
 msgid ""
 "Passwords are often not constructed as carefully as they should\n"
-"              be.  And even a strong passphrase could be sift out, if"
-" an\n"
+"              be. And even a strong passphrase could be sift out, if "
+"an\n"
 "              attacker is able to test millions of variants in hours,"
 " if not\n"
-"              seconds.  Firewalls and full-featured web-servers "
+"              seconds. Firewalls and full-featured web-servers "
 "already offer\n"
 "              sophisticated protection, if one can afford them, "
 "handle their\n"
@@ -1606,7 +1597,7 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:775
 msgid ""
 "Lock user account after the specified number of failed\n"
-"                  attempts.  Value zero means [1:no limit]."
+"                  attempts. Value zero means [1:no limit]."
 msgstr ""
 
 #: acct_mgr/templates/account_config.html:782
@@ -1635,8 +1626,8 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:807
 msgid ""
 "Lock time will grow for any value > 1, if the failure\n"
-"                      happens before lock expiration.  I.e. value '2'"
-" means"
+"                      happens before lock expiration. I.e. value '2' "
+"means"
 msgstr ""
 
 #: acct_mgr/templates/account_config.html:811
@@ -1691,11 +1682,11 @@ msgstr ""
 #: acct_mgr/templates/account_config.html:867
 msgid ""
 "The user will get [1:TRAC_ADMIN] assigned, that\n"
-"                  inherits all available permissions.  One such "
+"                  inherits all available permissions. One such "
 "account is\n"
-"                  required to configure Trac via the admin web-UI.  "
+"                  required to configure Trac via the admin web-UI. "
 "Create and\n"
-"                  manage more limitted admin accounts as well as "
+"                  manage more limited admin accounts as well as "
 "actual user\n"
 "                  accounts on your own later via the Accounts admin "
 "panel."
@@ -1709,7 +1700,7 @@ msgid ""
 "                  viewing these pages and changing the configuration "
 "later.\n"
 "                  Both are inherited by [3:ACCTMGR_ADMIN]\n"
-"                  permission.  To assign permissions you'll need\n"
+"                  permission. To assign permissions you'll need\n"
 "                  [4:PERMISSION_GRANT] inherited by\n"
 "                  [5:PERMISSION_ADMIN] too."
 msgstr ""
@@ -1761,7 +1752,7 @@ msgid ""
 "Please test\n"
 "                and adjust the configuration as required, or cancel "
 "to revert\n"
-"                all changes.  Apply settings to [1:trac.ini] only if "
+"                all changes. Apply settings to [1:trac.ini] only if "
 "you\n"
 "                really want to preserve them permanently."
 msgstr ""
