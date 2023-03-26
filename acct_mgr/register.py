@@ -215,20 +215,18 @@ class EmailCheck(Component):
                          EmailVerificationModule(self.env).verify_email
         if verify_account:
             # TRANSLATOR: Registration form hints for a mandatory input field.
-            hint = tag.p(_("""
-                The email address is required for Trac to send you a
-                verification token.
-                """), class_='hint')
+            hint = tag.p(_("The email address is required for Trac to send "
+                           "you a verification token."), class_='hint')
             if reset_password:
-                hint = tag(hint, tag.p(_("""
-                    Entering your email address will also enable you to reset
-                    your password if you ever forget it.
-                    """), class_='hint'))
+                hint = tag(hint, tag.p(_("Entering your email address will "
+                                         "also enable you to reset your "
+                                         "password if you ever forget it."),
+                                       class_='hint'))
             return tag(insert, hint), data
         elif reset_password:
             # TRANSLATOR: Registration form hint, if email input is optional.
-            hint = tag.p(_("""Entering your email address will enable you to
-                           reset your password if you ever forget it."""),
+            hint = tag.p(_("Entering your email address will enable you to "
+                           "reset your password if you ever forget it."),
                          class_='hint')
             return dict(optional=tag(insert, hint)), data
         else:

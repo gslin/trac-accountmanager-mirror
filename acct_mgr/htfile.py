@@ -138,9 +138,9 @@ class AbstractPasswordFileStore(Component):
                 pass
             elif e.errno == errno.EACCES:
                 raise TracError(_(
-                    """The password file could not be read. Trac requires
-                    read and write access to both the password file
-                    and its parent directory."""))
+                    "The password file could not be read. Trac requires read "
+                    "and write access to both the password file and its "
+                    "parent directory."))
             else:
                 raise
 
@@ -156,9 +156,9 @@ class AbstractPasswordFileStore(Component):
         except EnvironmentError as e:
             if e.errno == errno.EACCES or e.errno == errno.EROFS:
                 raise TracError(_(
-                    """The password file could not be updated. Trac requires
-                    read and write access to both the password file
-                    and its parent directory."""))
+                    "The password file could not be updated. Trac requires "
+                    "read and write access to both the password file and its "
+                    "parent directory."))
             else:
                 raise
         if f:

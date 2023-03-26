@@ -280,10 +280,9 @@ class AccountManager(Component):
             else:
                 self._notify('password_changed', user, password)
         else:
-            raise TracError(_(
-                """None of the IPasswordStore components listed in the
-                trac.ini supports setting the password or creating users.
-                """))
+            raise TracError(_("None of the IPasswordStore components listed "
+                              "in the trac.ini supports setting the password "
+                              "or creating users."))
         return result
 
     def check_password(self, user, password):

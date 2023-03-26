@@ -135,9 +135,9 @@ def htpasswd(password, hash):
             if not crypt(password, hash).startswith(hash):
                 # No, so bail out.
                 raise NotImplementedError(_(
-                    """Neither are \"sha2\" hash algorithms supported by the
-                    \"crypt\" module on this platform nor is \"passlib\"
-                    available."""))
+                    "Neither are \"sha2\" hash algorithms supported by the "
+                    "\"crypt\" module on this platform nor is \"passlib\" "
+                    "available."))
         return crypt(password, hash)
 
 
