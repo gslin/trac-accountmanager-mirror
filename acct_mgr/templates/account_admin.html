@@ -24,11 +24,11 @@
       <div>
         <h2>Manage User Account</h2>
         <p py:choose="">
-          <py:when test="acctmgr.name" i18n:msg="name, user">
-            for <b>${acctmgr.name}</b> (<em>$user</em>)
+          <py:when test="acctmgr.name">
+            <i18n:msg params="name, user">for <b>${acctmgr.name}</b> (<em>$user</em>)</i18n:msg>
           </py:when>
-          <py:otherwise i18n:msg="user">
-            for <b>$user</b>
+          <py:otherwise>
+            <i18n:msg params="user">for <b>$user</b></i18n:msg>
           </py:otherwise>
           <img src="${href.chrome('/acct_mgr/info.png')}" alt="info"
                title="User ID change requires additional components enabled"
