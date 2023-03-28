@@ -105,7 +105,7 @@ def hash_prefix(hash_type):
 
 def htpasswd(password, hash):
     def from_hash(hash):
-        match = re.match(r'\$[5,6]\$(?:rounds=(\d+)\$)?(\w+)', hash)
+        match = re.match(r'\$[5,6]\$(?:rounds=(\d+)\$)?([./\w]+)', hash)
         groups = match.groups()
         rounds = int(groups[0]) if groups[0] is not None else 5000
         salt = groups[1]

@@ -133,6 +133,20 @@ class HtPasswdTestCase(_BaseTestCase):
         except NotImplementedError:
             pass
 
+        try:
+            self._do_password_test(self.flavor, 'test_sha256',
+                                   'user:$5$.YGr6HhGl0TNN7dT$Jrq.j68U8/rrBo5Ks'
+                                   'YycA05JS3ZXzGn5C1u54Fh8l7.\n')
+        except NotImplementedError:
+            pass
+
+        try:
+            self._do_password_test(self.flavor, 'test_sha256',
+                                   'user:$5$/sSmB.1hM8M7YlWP$qQwILOVGJ7Z/JNIml'
+                                   'ZmweMBy7VKO9pwmmAwBf0YrOB6\n')
+        except NotImplementedError:
+            pass
+
     def test_sha512(self):
         try:
             self._do_password_test(self.flavor, 'test_sha512',
@@ -140,6 +154,22 @@ class HtPasswdTestCase(_BaseTestCase):
                                    '9ExQK2S3YXW7/FlfUcw2vy7WF.NH5ZF6SIT14Dj'
                                    'ngOGkcx.5mINko67cLRrqFFh1AltOT4uPnET7Bs'
                                    'JXuI56H/\n')
+        except NotImplementedError:
+            pass
+
+        try:
+            self._do_password_test(self.flavor, 'test_sha512',
+                                   'user:$6$.Gz0dqxtsVYNeES3$H9cLym9oGJqILw1fj'
+                                   'XHm2Ha54ZJhQ/h8XMaxWpKnPziXqI0nu45a1Rsbrde'
+                                   '42gNbh.78EiFB0A0Qlpdps7JTg1\n')
+        except NotImplementedError:
+            pass
+
+        try:
+            self._do_password_test(self.flavor, 'test_sha512',
+                                   'user:$6$/X87Imrz04AZGkLr$fxSvADugt7V3ufvvg'
+                                   'NGG0BStDjEAwLYRUGjWxlJX0zcD64RxBOAldIDdqNZ'
+                                   'bDHoDv.GjVOVfQxjMZwWVBFxgz0\n')
         except NotImplementedError:
             pass
 
