@@ -8,21 +8,40 @@
 #
 # Author: Pedro Algarvio <ufs@ufsoft.org>
 
-import base64
+import email
+import re
+import unittest
 
-from trac.tests.notification import parse_smtp_message
-
-from acct_mgr.tests.functional import *
+from . import FunctionalTestSuite, FunctionalTestCaseSetup, tc
 
 
-class TestFormLoginAdmin(FunctionalTwillTestCaseSetup):
+def parse_smtp_message(data):
+    if isinstance(data, bytes):
+        data = data.decode('utf-8')
+    message = email.message_from_string(data)
+    headers = dict(message.items())
+    if message.is_multipart():
+        for part in message.walk():
+            if part.get_content_type() == 'text/plain':
+                break
+        else:
+            return headers, u''
+    else:
+        part = message
+    payload = part.get_payload(decode=True)
+    encoding = part.get_content_charset()
+    body = payload.decode(encoding)
+    return headers, body
+
+
+class TestFormLoginAdmin(FunctionalTestCaseSetup):
     def runTest(self):
         """Login with test user 'admin'"""
         self._tester.login('admin')
         self._tester.logout()
 
 
-class TestFormLoginUser(FunctionalTwillTestCaseSetup):
+class TestFormLoginUser(FunctionalTestCaseSetup):
     def runTest(self):
         """Login with test user 'user'"""
         self._tester.login('user')
@@ -32,7 +51,7 @@ class TestFormLoginUser(FunctionalTwillTestCaseSetup):
 class TestRegisterNewUser(FunctionalTestCaseSetup):
     def runTest(self):
         """Register 'testuser'"""
-        self._tester.register('testuser')
+        self._tester.register('testuser', 'testuser@trac.example.org')
 
 
 class TestLoginNewUser(FunctionalTestCaseSetup):
@@ -66,7 +85,7 @@ class TestFailRegisterDuplicateUsername(FunctionalTestCaseSetup):
         tc.formvalue(reg_form_name, 'password', username)
         tc.formvalue(reg_form_name, 'password_confirm', username)
         tc.submit()
-        tc.find("Another account with that name already exists.")
+        tc.find("Another account or group already exists")
 
 
 class TestNewAccountNotification(FunctionalTestCaseSetup):
@@ -89,9 +108,8 @@ class TestNewAccountNotification(FunctionalTestCaseSetup):
 
         self.assertEqual(self._smtpd.get_recipients(), [address_to_notify])
         self.assertEqual(headers['Subject'],
-                         '[%s] New user registration: %s' % (
-                                            'testenv%s' % self._testenv.port,
-                                            new_username))
+                         '[testenv%d] Account created: %s' %
+                         (self._testenv.port, new_username))
         self.assertEqual(headers['X-URL'], self._testenv.url)
 
 
@@ -101,27 +119,27 @@ class TestNewAccountEmailVerification(FunctionalTestCaseSetup):
         user_email = "foo@testenv%s.tld" % self._testenv.port
         self._tester.login("foo")
 
-        tc.find('<strong>Notice:</strong> <span>An email has been sent to '
-                '%s with a token to <a href="/verify_email">verify your new '
-                'email address</a></span>' % user_email)
+        tc.find(r'An email has been sent to &lt;%s&gt; with a token to '
+                r'<a href="/trac/verify_email">verify your new email address'
+                r'</a>' % re.escape(user_email))
         self._tester.go_to_front()
-        tc.find('<strong>Warning:</strong> <span>Your permissions have been '
-                'limited until you <a href="/verify_email">verify your email '
-                'address</a></span>')
+        tc.find(r'<strong>Warning:</strong>\s*'
+                r'Your permissions have been limited until you '
+                r'<a href="/trac/verify_email">verify your email address</a>')
 
 
 class VerifyNewAccountEmailAddress(FunctionalTestCaseSetup):
     def runTest(self):
         """User confirms his address with mailed token"""
         headers, body = parse_smtp_message(self._smtpd.get_message())
-        blines = base64.decodestring(body).splitlines()
+        blines = body.splitlines()
         token = [l.split() for l in blines if 'Verification Token' in l][0][-1]
 
         tc.find('Logout') # User is logged in from previous test
         self._tester.go_to_front()
-        tc.find('<strong>Warning:</strong> <span>Your permissions have been '
-                'limited until you <a href="/verify_email">verify your email '
-                'address</a></span>')
+        tc.find(r'<strong>Warning:</strong>\s*'
+                r'Your permissions have been limited until you <a '
+                r'href="/trac/verify_email">verify your email address</a>')
         tc.go(self._testenv.url + '/verify_email')
 
         reg_form_name = 'acctmgr_verify_email'
@@ -159,9 +177,8 @@ class PasswdResetsNotifiesAdmin(FunctionalTestCaseSetup):
         headers, body = parse_smtp_message(
             self._smtpd.get_message('admin@testenv%s.tld' % self._testenv.port))
         self.assertEqual(headers['Subject'],
-                         '[%s] Password reset for user: %s' % (
-                                            'testenv%s' % self._testenv.port,
-                                            username))
+                         '[testenv%s] Account password reset: %s' %
+                         (self._testenv.port, username))
         self.assertEqual(headers['X-URL'], self._testenv.url)
 
 
@@ -172,9 +189,8 @@ class PasswdResetsNotifiesUser(FunctionalTestCaseSetup):
         email_addr = "foo@testenv%s.tld" % self._testenv.port
         headers, self.body = parse_smtp_message(self._smtpd.get_message(email_addr))
         self.assertEqual(headers['Subject'],
-                         '[%s] Trac password reset for user: %s' % (
-                                            'testenv%s' % self._testenv.port,
-                                            username))
+                         '[testenv%d] Account password reset: %s' %
+                         (self._testenv.port, username))
 
 
 class UserLoginWithMailedPassword(PasswdResetsNotifiesUser):
@@ -182,7 +198,7 @@ class UserLoginWithMailedPassword(PasswdResetsNotifiesUser):
         """User is able to login with the new password"""
         PasswdResetsNotifiesUser.runTest(self)
         # Does it include a new password
-        body = base64.decodestring(self.body)
+        body = self.body
         username = 'foo'
         self.assertTrue('Username: %s' % username in body)
         self.assertTrue('Password:' in body)
@@ -213,11 +229,9 @@ class UserCantBrowseUntilPasswdChange(PasswdResetsNotifiesUser):
         tc.url(forced_passwd_change_url)
         tc.follow('New Ticket')
         tc.url(forced_passwd_change_url)
-        tc.follow('Browse Source')
-        tc.url(forced_passwd_change_url)
 
         # Now, let's change his password
-        body = base64.decodestring(self.body)
+        body = self.body
         passwd = [l.split(':')[1].strip() for l in
                   body.splitlines() if 'Password:' in l][0]
         username = 'foo'
@@ -252,8 +266,8 @@ class DeleteAccountNotifiesAdmin(FunctionalTestCaseSetup):
         tc.find("Login") # We're logged out when we delete our account
         headers, _ = parse_smtp_message(self._smtpd.get_message())
         self.assertEqual(headers['Subject'],
-                         '[%s] Deleted User: %s' % (
-                                'testenv%s' % self._testenv.port, 'foo'))
+                         '[testenv%d] Account deleted: %s' %
+                         (self._testenv.port, 'foo'))
 
 
 class UserNoLongerLogins(FunctionalTestCaseSetup):
@@ -271,7 +285,7 @@ class UserNoLongerLogins(FunctionalTestCaseSetup):
 class UserIsAbleToRegisterWithSameUserName(FunctionalTestCaseSetup):
     def runTest(self):
         """Register with deleted username (session and session_attributes clean)"""
-        self._tester.register('foo')
+        self._tester.register('foo', 'foo@trac.example.org')
         self._tester.login('foo')
         self._tester.logout()
         self._smtpd.full_reset()

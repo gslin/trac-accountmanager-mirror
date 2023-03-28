@@ -9,38 +9,51 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
+import sys
 import unittest
+
+_twill_required = 'Twill>=2'
 try:
-    import twill, subprocess
-    INCLUDE_FUNCTIONAL_TESTS = True
+    import twill
 except ImportError:
+    twill = None
     INCLUDE_FUNCTIONAL_TESTS = False
+else:
+    # XXX Avoid tracenv log writing to stdout via twill.log
+    if hasattr(twill, 'log') and hasattr(twill, 'handler'):
+        twill.log.removeHandler(twill.handler)
+    import pkg_resources
+    try:
+        pkg_resources.require(_twill_required)
+    except:
+        INCLUDE_FUNCTIONAL_TESTS = False
+        twill = None
+    else:
+        INCLUDE_FUNCTIONAL_TESTS = True
 
 
 def test_suite():
-    from acct_mgr.tests import (
-        admin, api, db, guard, htfile, model, register, svnserve, util)
-    from acct_mgr.opt.tests import test_suite as opt_test_suite
+    from . import (admin, api, db, guard, htfile, model, register, svnserve,
+                   util)
+    from ..opt import tests as opt_tests
 
     suite = unittest.TestSuite()
-    suite.addTest(admin.test_suite())
-    suite.addTest(api.test_suite())
-    suite.addTest(db.test_suite())
-    suite.addTest(guard.test_suite())
-    suite.addTest(htfile.test_suite())
-    suite.addTest(model.test_suite())
-    suite.addTest(register.test_suite())
-    suite.addTest(svnserve.test_suite())
-    suite.addTest(util.test_suite())
-    suite.addTest(opt_test_suite())
+    for mod in (admin, api, db, guard, htfile, model, register, svnserve, util,
+                opt_tests):
+        suite.addTest(mod.test_suite())
 
-    # if INCLUDE_FUNCTIONAL_TESTS:
-    #     from acct_mgr.tests.functional import suite as functional_suite
-    #     suite.addTest(functional_suite())
+    if INCLUDE_FUNCTIONAL_TESTS:
+        from . import functional
+        suite.addTest(functional.test_suite())
+    elif not twill:
+        sys.stderr.write('SKIP: functional tests (%s unavailable)\n' %
+                         _twill_required)
+    else:
+        sys.stderr.write('SKIP: functional tests\n')
     return suite
 
+
 if __name__ == '__main__':
-    import sys
     if '--skip-functional-tests' in sys.argv:
         sys.argv.remove('--skip-functional-tests')
         INCLUDE_FUNCTIONAL_TESTS = False

@@ -8,59 +8,98 @@
 #
 # Author: Pedro Algarvio <ufs@ufsoft.org>
 
+import io
 import os
 import unittest
 
-from trac.test import TestSetup
-from trac.tests.functional import twill, b, tc, internal_error, ConnectError
-from trac.tests.functional import FunctionalTestCaseSetup as \
-                                                    TracFunctionalTestCaseSetup
-from trac.tests.functional import FunctionalTwillTestCaseSetup
-from trac.tests.functional.tester import FunctionalTester
-
-import acct_mgr
-
-# Setup these vars here because they will be used on the following imports
-acct_mgr_source_tree = os.path.normpath(
-                                    os.path.join(acct_mgr.__file__, '..', '..'))
-# testing.log gets any unused output from subprocesses
-logfile = open(os.path.join(acct_mgr_source_tree, 'testing.log'), 'w')
-# functional-testing.log gets the twill output
-twill.set_output(open(os.path.join(acct_mgr_source_tree,
-                                   'functional-testing.log'), 'w'))
-
-from acct_mgr.tests.functional.testenv import AcctMgrFuntionalTestEnvironment
-from acct_mgr.tests.functional.tester import AcctMgrFunctionalTester
+import twill
 
 
-class FunctionalTestSuite(TestSetup):
-    def setUp(self, port=None):
-        if port == None:
-            port = 8000 + os.getpid() % 1000
-            dirname = "testenv"
+class TwillCommands(object):
+
+    def __init__(self, commands):
+        self.commands = commands
+
+    def __getattr__(self, name):
+        value = getattr(self.commands, name)
+        if not callable(value):
+            return value
+
+        def wrapper(*args, **kwargs):
+            try:
+                return value(*args, **kwargs)
+            except twill.errors.TwillAssertionError as e:
+                testname = _state.testname
+                if not testname:
+                    raise
+                filename = os.path.join(_state.testenv.tracdir, 'log',
+                                        testname + '.html')
+                html = self.commands.browser.html
+                with io.open(filename, 'w', encoding='utf-8') as f:
+                    f.write(html)
+                raise twill.errors.TwillAssertionError('%s at %s' %
+                                                       (e, filename))
+
+        return wrapper
+
+
+tc = TwillCommands(twill.commands)
+
+
+class FunctionalTestState(object):
+
+    testenv = None
+    tester = None
+    testname = None
+
+
+_state = FunctionalTestState()
+
+
+class FunctionalTestSuite(unittest.TestSuite):
+
+    def run(self, result):
+        if _state.testenv:
+            testenv = None
         else:
-            dirname = "testenv%s" % port
-        dirname = os.path.join(acct_mgr_source_tree, dirname)
+            from .testenv import TestEnvironment
+            from .tester import FunctionalTester
+            testenv = TestEnvironment()
+            testenv.init()
+            _state.testenv = testenv
+            _state.tester = FunctionalTester(testenv.url)
+        try:
+            return super(FunctionalTestSuite, self).run(result)
+        finally:
+            if testenv:
+                testenv.cleanup()
 
-        baseurl = "http://localhost:%s" % port
-        self._testenv = AcctMgrFuntionalTestEnvironment(dirname, port, baseurl)
-        self._testenv.start()
-        self._tester = AcctMgrFunctionalTester(baseurl, self._testenv.repo_url())
-        self.fixture = (self._testenv, self._tester)
+
+class FunctionalTestCaseSetup(unittest.TestCase):
+
+    @property
+    def _testenv(self):
+        return _state.testenv
+
+    @property
+    def _tester(self):
+        return _state.tester
+
+    @property
+    def _smtpd(self):
+        return _state.testenv.smtpd
+
+    def setUp(self):
+        _state.testname = self.__class__.__name__
 
     def tearDown(self):
-        self._testenv.stop()
+        _state.testname = None
 
 
-class FunctionalTestCaseSetup(TracFunctionalTestCaseSetup):
-    def setUp(self):
-        self._testenv, self._tester = self.fixture
-        self._smtpd = self._testenv.smtpd
+def test_suite():
+    from . import testcases
+    return testcases.test_suite()
 
-def suite():
-    from acct_mgr.tests.functional.testcases import suite
-    suite = suite()
-    return suite
 
 if __name__ == '__main__':
-    unittest.main(defaultTest='suite')
+    unittest.main(defaultTest='test_suite')

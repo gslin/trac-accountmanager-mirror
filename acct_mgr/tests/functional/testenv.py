@@ -11,114 +11,238 @@
 import os
 import sys
 import time
+import socket
+import subprocess
 
-from subprocess import call, Popen
+from trac.env import Environment
+from trac.util import create_file
+from trac.util.compat import close_fds
+try:
+    from trac.test import rmtree
+except ImportError:
+    from shutil import rmtree
 
-from trac.admin import console
-from trac.web import standalone
-from trac.tests.functional.compat import close_fds
-
-from trac.tests.functional.svntestenv import SvnFunctionalTestEnvironment
-
-from acct_mgr.pwhash import mkhtpasswd
-from acct_mgr.tests.functional import logfile
-from acct_mgr.tests.functional import tc, ConnectError
-from acct_mgr.tests.functional.smtpd import AcctMgrSMTPThreadedServer
+from .smtpd import SMTPThreadedServer
 
 
-class AcctMgrFuntionalTestEnvironment(SvnFunctionalTestEnvironment):
+TOX_ENV_DIR = os.environ.get('TOX_ENV_DIR')
 
-    def __init__(self, dirname, port, url):
-        super(AcctMgrFuntionalTestEnvironment, self).__init__(dirname, port,
-                                                              url)
-        self.smtp_port = self.port + os.getpid() % 1000
-        self.smtpd = AcctMgrSMTPThreadedServer(self.smtp_port)
 
-        config = self.get_trac_environment().config
-        # Enabled Account Manager
-        config.set('components', 'acct_mgr.*', 'enabled')
-        # Disable trac's LoginModule
-        config.set('components', 'trac.web.auth.LoginModule', 'disabled')
-        # Setup Account Manager
-        config.set('account-manager', 'password_file', self.htpasswd)
-        config.set('account-manager', 'password_format', 'htpasswd')
-        config.set('account-manager', 'password_store', 'HtPasswdStore')
-        # Setup Notification
-        config.set('notification', 'smtp_enabled', 'true')
-        config.set('notification', 'smtp_from', 'testenv%s@localhost' % self.port)
-        config.set('notification', 'smtp_port', self.smtp_port)
-        config.set('notification', 'smtp_server', 'localhost')
-        config.set('project', 'url', self.url)
-        config.set('project', 'admin', 'testenv%s@localhost' % self.port)
-        config.set('trac', 'base_url', self.url)
+if hasattr(subprocess.Popen, '__enter__'):
+    Popen = subprocess.Popen
+else:
+    class Popen(subprocess.Popen):
 
-        config.save()
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            try:
+                if self.stdin:
+                    self.stdin.close()
+            finally:
+                self.wait()
+            for f in (self.stdout, self.stderr):
+                if f:
+                    f.close()
+
+
+def get_topdir():
+    path = os.path.dirname(os.path.abspath(__file__))
+    suffix = '/acct_mgr/tests/functional'.replace('/', os.sep)
+    if not path.endswith(suffix):
+        raise RuntimeError("%r doesn't end with %r" % (path, suffix))
+    return path[:-len(suffix)]
+
+
+def get_testdir():
+    dir_ = TOX_ENV_DIR
+    if dir_ and os.path.isdir(dir_):
+        dir_ = os.path.join(dir_, 'tmp')
+    else:
+        dir_ = get_topdir()
+    if not os.path.isabs(dir_):
+        raise RuntimeError('Non absolute directory: %s' % repr(dir_))
+    return os.path.join(dir_, 'testenv')
+
+
+def get_ephemeral_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('127.0.0.1', 0))
+        s.listen(1)
+        return s.getsockname()[1]
+    finally:
+        s.close()
+
+
+def to_b(value):
+    if isinstance(value, unicode):
+        return value.encode('utf-8')
+    if isinstance(value, bytes):
+        return value
+    raise ValueError(type(value))
+
+
+class TestEnvironment(object):
+
+    _testdir = get_testdir()
+    _plugins_dir = os.path.join(_testdir, 'plugins') if not TOX_ENV_DIR else ''
+    _devnull = None
+    _log = None
+    port = None
+    smtp_port = None
+    tracdir = None
+    url = None
+    smtpd = None
+    _htpasswd = None
+    _env = None
+    _tracd = None
+
+    def __init__(self):
+        if os.path.isdir(self._testdir):
+            rmtree(self._testdir)
+        os.mkdir(self._testdir)
+        if self._plugins_dir:
+            os.mkdir(self._plugins_dir)
+
+    _inherit_template = """\
+[inherit]
+plugins_dir = %(plugins_dir)s
+[components]
+acct_mgr.* = enabled
+trac.web.auth.LoginModule = disabled
+[logging]
+log_type = file
+log_level = INFO
+[trac]
+base_url = %(url)s
+use_chunked_encoding = disabled
+[project]
+url = %(url)s
+admin = testenv%(port)d@localhost
+[account-manager]
+auth_init = disabled
+password_store = HtPasswdStore
+htpasswd_file = %(htpasswd)s
+verify_email = enabled
+username_regexp = (?i)^[-A-Z0-9._]{3,}$
+[notification]
+smtp_enabled = enabled
+smtp_from = testenv%(port)d@localhost
+smtp_port = %(smtp_port)d
+smtp_server = localhost
+"""
+
+    @property
+    def inherit_file(self):
+        return self._inherit_template % \
+               {'plugins_dir': self._plugins_dir, 'url': self.url,
+                'htpasswd': self._htpasswd, 'port': self.port,
+                'smtp_port': self.smtp_port}
+
+    def init(self):
+        self._devnull = os.open(os.devnull, os.O_RDWR)
+        self._log = os.open(os.path.join(self._testdir, 'tracd.log'),
+                            os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+        self.port = get_ephemeral_port()
+        self.smtp_port = get_ephemeral_port()
+        if self._plugins_dir:
+            self.check_call([sys.executable, 'setup.py', 'develop', '-mxd',
+                             self._plugins_dir])
+        self.tracdir = os.path.join(self._testdir, 'trac')
+        self.url = 'http://127.0.0.1:%d/%s' % \
+                   (self.port, os.path.basename(self.tracdir))
+        self._htpasswd = os.path.join(self._testdir, 'htpasswd.txt')
+        create_file(self._htpasswd,
+                    'admin:$apr1$CJoMFGDO$W5ERyxnTl6qAUa9BbE0QV1\n'
+                    'user:$apr1$ZQuTwNFe$ReYgDiL/gduTvjO29qdYx0\n')
+        inherit = os.path.join(self._testdir, 'inherit.ini')
+        with open(inherit, 'w') as f:
+            f.write(self.inherit_file)
+        args = [sys.executable, '-m', 'trac.admin.console', self.tracdir]
+        with self.popen(args, stdin=subprocess.PIPE) as proc:
+            proc.stdin.write(
+                b'initenv --inherit=%s testenv%d sqlite:db/trac.db\n'
+                b'permission add admin TRAC_ADMIN\n'
+                % (to_b(inherit), self.port))
+        self.smtpd = SMTPThreadedServer(self.smtp_port)
+        self.smtpd.start()
+        self.start()
+
+    def cleanup(self):
+        self.stop()
+        if self.smtpd:
+            self.smtpd.stop()
+            self.smtpd = None
+        if self._env:
+            self._env.shutdown()
+            self._env = None
+        if self._devnull is not None:
+            os.close(self._devnull)
+            self._devnull = None
+        if self._log is not None:
+            os.close(self._log)
+            self._log = None
 
     def start(self):
-        """Starts the webserver"""
-        if 'FIGLEAF' in os.environ:
-            exe = os.environ['FIGLEAF']
-        else:
-            exe = sys.executable
-        server = Popen([exe, standalone.__file__,
-                        "--port=%s" % self.port, "-s",
-                        "--hostname=localhost",
-                        self.tracdir],
-                       stdout=logfile, stderr=logfile,
-                       close_fds=close_fds,
-                       cwd=self.command_cwd,
-                      )
-        self.pid = server.pid
-        # Verify that the url is ok
-        timeout = 30
-        while timeout:
+        if self._tracd and self._tracd.returncode is None:
+            raise RuntimeError('tracd is running')
+        args = [
+            sys.executable, '-m', 'trac.web.standalone',
+            '--port=%d' % self.port, '--hostname=localhost', self.tracdir,
+        ]
+        self._tracd = self.popen(args, stdout=self._log, stderr=self._log)
+        start = time.time()
+        while time.time() - start < 10:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                tc.go(self.url)
+                s.connect(('127.0.0.1', self.port))
+            except socket.error:
+                time.sleep(0.125)
+            else:
                 break
-            except ConnectError:
-                time.sleep(1)
-            timeout -= 1
+            finally:
+                s.close()
         else:
-            raise Exception('Timed out waiting for server to start.')
-        tc.url(self.url)
-        self.smtpd.start()
+            raise RuntimeError('Timed out waiting for tracd to start')
 
     def stop(self):
-        super(AcctMgrFuntionalTestEnvironment, self).stop()
-        self.smtpd.stop()
+        if self._tracd:
+            try:
+                self._tracd.terminate()
+            except EnvironmentError:
+                pass
+            self._tracd.wait()
+            self._tracd = None
 
-    def create(self):
-        """Create a new test environment; Trac, Subversion,
-        authentication."""
-        if os.mkdir(self.dirname):
-            raise Exception('unable to create test environment')
-        repodir = self.repo_path_for_initenv()
-        if call(["svnadmin", "create", repodir], stdout=logfile,
-                stderr=logfile, close_fds=close_fds):
-            raise Exception('unable to create subversion repository')
-        self._tracadmin('initenv', 'testenv%s' % self.port,
-                        'sqlite:db/trac.db', 'svn', repodir)
+    def restart(self):
+        self.stop()
+        self.start()
 
-        if os.path.exists(self.htpasswd):
-            os.unlink(self.htpasswd)
-        self.adduser('admin')
-        self.adduser('user')
-        self._tracadmin('permission', 'add', 'admin', 'TRAC_ADMIN')
-        # Setup Trac logging
-        env = self.get_trac_environment()
-        env.config.set('logging', 'log_type', 'file')
-        env.config.save()
+    def popen(self, *args, **kwargs):
+        kwargs.setdefault('stdin', self._devnull)
+        kwargs.setdefault('stdout', self._devnull)
+        kwargs.setdefault('stderr', self._devnull)
+        kwargs.setdefault('close_fds', close_fds)
+        return Popen(*args, **kwargs)
 
-    def adduser(self, user):
-        """Add a user to the environment.  Password is the username."""
-        with open(self.htpasswd, 'a') as f:
-            f.write('%s:%s\n' % (user, mkhtpasswd(user)))
+    def check_call(self, *args, **kwargs):
+        kwargs.setdefault('stdin', self._devnull)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('stderr', subprocess.PIPE)
+        with self.popen(*args, **kwargs) as proc:
+            stdout, stderr = proc.communicate()
+            if proc.returncode != 0:
+                raise RuntimeError('Exited with %d (stdout %r, stderr %r)' %
+                                   (proc.returncode, stdout, stderr))
+
+    def get_trac_environment(self):
+        if not self._env:
+            self._env = Environment(self.tracdir)
+        return self._env
 
     def _tracadmin(self, *args):
-        """Internal utility method for calling trac-admin"""
-        retval = call([sys.executable, console.__file__, self.tracdir]
-                      + list(args), stdout=logfile, stderr=logfile,
-                      close_fds=close_fds, cwd=self.command_cwd)
-        if retval:
-            raise Exception('Failed with exitcode %s running trac-admin ' \
-                            'with %r' % (retval, args))
+        self.check_call((sys.executable, '-m', 'trac.admin.console',
+                         self.tracdir) + args)

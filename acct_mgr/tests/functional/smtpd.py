@@ -8,10 +8,14 @@
 #
 # Author: Pedro Algarvio <ufs@ufsoft.org>
 
-from trac.tests.notification import SMTPThreadedServer, SMTPServerStore
+from __future__ import absolute_import
+
+import asyncore
+import smtpd
+import threading
 
 
-class NonForgetingSMTPServerStore(SMTPServerStore):
+class NonForgetingSMTPServerStore(object):
     """
     Non forgetting store for SMTP data.
     """
@@ -20,39 +24,64 @@ class NonForgetingSMTPServerStore(SMTPServerStore):
     # Account Manager at times sends more than one email and we need to be
     # able to test both
 
-    sender = None
-    message = None
-    recipients = None
+    def __init__(self):
+        self.messages = {}
+        self.last_message = {}
 
-    messages = {}
-    def reset(self, args):
-        if self.message:
-            for recipient in self.recipients:
-                self.messages[recipient] = {}
-                self.messages[recipient]['recipients'] = self.recipients
-                self.messages[recipient]['sender'] = self.sender
-                self.messages[recipient]['message'] = self.message
-        self.sender = None
-        self.recipients = []
-        self.message = None
+    @property
+    def recipients(self):
+        return self.last_message.get('recipients')
+
+    @property
+    def sender(self):
+        return self.last_message.get('sender')
+
+    @property
+    def message(self):
+        return self.last_message.get('message')
+
+    def process_message(self, peer, mailfrom, rcpttos, data):
+        message = {'recipients': rcpttos, 'sender': mailfrom, 'message': data}
+        self.messages.update((recipient, message) for recipient in rcpttos)
+        self.last_message = message
 
     def full_reset(self):
-        self.messages = {}
-        self.sender = None
-        self.recipients = []
-        self.message = None
+        self.messages.clear()
+        self.last_message.clear()
 
-class AcctMgrSMTPThreadedServer(SMTPThreadedServer):
+
+class SMTPServer(smtpd.SMTPServer):
+
+    store = None
+
+    def __init__(self, localaddr, store):
+        smtpd.SMTPServer.__init__(self, localaddr, None)
+        self.store = store
+
+    def process_message(self, peer, mailfrom, rcpttos, data):
+        self.store.process_message(peer, mailfrom, rcpttos, data)
+
+
+class SMTPThreadedServer(threading.Thread):
     """
     Run a SMTP server for a single connection, within a dedicated thread
     """
-
-    # We override trac's SMTPThreadedServer in order to use our own mail store
+    host = 'localhost'
 
     def __init__(self, port):
-        SMTPThreadedServer.__init__(self, port)
-        # Override the store with out own
-        self.store  = NonForgetingSMTPServerStore()
+        self.port = port
+        self.store = NonForgetingSMTPServerStore()
+        super(SMTPThreadedServer, self).__init__(target=asyncore.loop,
+                                                 args=(0.1, True))
+        self.daemon = True
+
+    def start(self):
+        self.server = SMTPServer((self.host, self.port), self.store)
+        super(SMTPThreadedServer, self).start()
+
+    def stop(self):
+        self.server.close()
+        self.join()
 
     def get_sender(self, recipient=None):
         """Return the sender of a message. If recipient is passed, return
@@ -71,6 +100,7 @@ class AcctMgrSMTPThreadedServer(SMTPThreadedServer):
             return self.store.messages[recipient]['recipients']
         except KeyError:
             return self.store.recipients
+
     def get_message(self, recipient=None):
         """Return the message of a message. If recipient is passed, return
         the actual message for the message sent to that recipient, else, send

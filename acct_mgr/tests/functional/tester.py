@@ -8,14 +8,30 @@
 #
 # Author: Pedro Algarvio <ufs@ufsoft.org>
 
-from acct_mgr.tests.functional import *
+import re
 
-class AcctMgrFunctionalTester(FunctionalTester):
+from . import tc
 
-    def __init__(self, url, repo_url):
-        super(AcctMgrFunctionalTester, self).__init__(url)
-        # Don't stay logged in as admin.
-        self.logout()
+
+internal_error = 'Trac detected an internal error:'
+
+
+class FunctionalTester(object):
+
+    url = None
+
+    def __init__(self, url):
+        self.url = url
+        self.go_to_front()
+
+    def go_to_url(self, url):
+        tc.go(url)
+        tc.url(re.escape(url))
+        tc.notfind(internal_error)
+
+    def go_to_front(self):
+        """Go to the Trac front page"""
+        self.go_to_url(self.url)
 
     def login(self, username, passwd=None):
         """Override FunctionalTester.login, we're not using Basic
@@ -29,10 +45,16 @@ class AcctMgrFunctionalTester(FunctionalTester):
         tc.formvalue(login_form_name, 'user', username)
         tc.formvalue(login_form_name, 'password', passwd)
         tc.submit()
-        tc.find("logged in as %s" % username)
+        tc.find("logged in as <span[^>]+>%s</span>" % username)
         tc.find("Logout")
         tc.url(self.url)
         tc.notfind(internal_error)
+
+    def logout(self):
+        tc.formvalue('logout', 'logout', 'Logout')
+        tc.submit()
+        tc.notfind(internal_error)
+        tc.notfind('logged in as')
 
     def register(self, username, email='', passwd=None):
         """Allow user registration."""
@@ -48,3 +70,6 @@ class AcctMgrFunctionalTester(FunctionalTester):
         tc.submit()
         tc.notfind("The passwords must match.")
         tc.notfind(internal_error)
+        tc.find('Your username has been successfully registered but your '
+                'account still requires activation')
+        tc.url('/login$')
