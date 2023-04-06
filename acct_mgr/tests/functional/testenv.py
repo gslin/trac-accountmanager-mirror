@@ -15,7 +15,6 @@ import socket
 import subprocess
 
 from trac.env import Environment
-from trac.util import create_file
 from trac.util.compat import close_fds
 try:
     from trac.test import rmtree
@@ -96,7 +95,6 @@ class TestEnvironment(object):
     tracdir = None
     url = None
     smtpd = None
-    _htpasswd = None
     _env = None
     _tracd = None
 
@@ -110,9 +108,6 @@ class TestEnvironment(object):
     _inherit_template = """\
 [inherit]
 plugins_dir = %(plugins_dir)s
-[components]
-acct_mgr.* = enabled
-trac.web.auth.LoginModule = disabled
 [logging]
 log_type = file
 log_level = INFO
@@ -122,12 +117,6 @@ use_chunked_encoding = disabled
 [project]
 url = %(url)s
 admin = testenv%(port)d@localhost
-[account-manager]
-auth_init = disabled
-password_store = HtPasswdStore
-htpasswd_file = %(htpasswd)s
-verify_email = enabled
-username_regexp = (?i)^[-A-Z0-9._]{3,}$
 [notification]
 smtp_enabled = enabled
 smtp_from = testenv%(port)d@localhost
@@ -139,8 +128,7 @@ smtp_server = localhost
     def inherit_file(self):
         return self._inherit_template % \
                {'plugins_dir': self._plugins_dir, 'url': self.url,
-                'htpasswd': self._htpasswd, 'port': self.port,
-                'smtp_port': self.smtp_port}
+                'port': self.port, 'smtp_port': self.smtp_port}
 
     def init(self):
         self._devnull = os.open(os.devnull, os.O_RDWR)
@@ -154,10 +142,6 @@ smtp_server = localhost
         self.tracdir = os.path.join(self._testdir, 'trac')
         self.url = 'http://127.0.0.1:%d/%s' % \
                    (self.port, os.path.basename(self.tracdir))
-        self._htpasswd = os.path.join(self._testdir, 'htpasswd.txt')
-        create_file(self._htpasswd,
-                    'admin:$apr1$CJoMFGDO$W5ERyxnTl6qAUa9BbE0QV1\n'
-                    'user:$apr1$ZQuTwNFe$ReYgDiL/gduTvjO29qdYx0\n')
         inherit = os.path.join(self._testdir, 'inherit.ini')
         with open(inherit, 'w') as f:
             f.write(self.inherit_file)
@@ -165,7 +149,8 @@ smtp_server = localhost
         with self.popen(args, stdin=subprocess.PIPE) as proc:
             proc.stdin.write(
                 b'initenv --inherit=%s testenv%d sqlite:db/trac.db\n'
-                b'permission add admin TRAC_ADMIN\n'
+                b'config set components acct_mgr.* enabled\n'
+                b'config set components trac.web.auth.loginmodule disabled\n'
                 % (to_b(inherit), self.port))
         self.smtpd = SMTPThreadedServer(self.smtp_port)
         self.smtpd.start()
