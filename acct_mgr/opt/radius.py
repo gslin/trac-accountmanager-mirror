@@ -9,12 +9,14 @@
 #
 # Author: Chris Shenton <chris@koansys.com>
 
-from StringIO import StringIO
+from io import StringIO
 
-from acct_mgr.api import IPasswordStore
 from trac.config import IntOption, Option
 from trac.core import Component, implements
 from trac.util.text import unicode_passwd
+
+from ..api import IPasswordStore
+
 
 DICTIONARY = u"""
 ATTRIBUTE User-Name     1 string

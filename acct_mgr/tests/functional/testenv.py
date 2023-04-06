@@ -21,6 +21,7 @@ try:
 except ImportError:
     from shutil import rmtree
 
+from ...compat import unicode
 from .smtpd import SMTPThreadedServer
 
 

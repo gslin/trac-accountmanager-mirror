@@ -8,9 +8,9 @@ import shutil
 import tempfile
 import unittest
 
-from acct_mgr.svnserve import SvnServePasswordStore
-
 from trac.test import EnvironmentStub
+
+from ..svnserve import SvnServePasswordStore
 
 
 class SvnServePasswordTestCase(unittest.TestCase):

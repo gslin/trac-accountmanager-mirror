@@ -13,7 +13,7 @@ import unittest
 
 from trac.test import EnvironmentStub
 
-from acct_mgr.db import SessionStore
+from ..db import SessionStore
 
 
 class _BaseTestCase(unittest.TestCase):

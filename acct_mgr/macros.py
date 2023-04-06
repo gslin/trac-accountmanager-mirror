@@ -15,9 +15,9 @@ from trac.web.chrome import Chrome
 from trac.wiki.api import IWikiMacroProvider, WikiSystem, parse_args
 from trac.wiki.formatter import format_to_oneliner
 
-from acct_mgr.admin import fetch_user_data
-from acct_mgr.api import AccountManager, tag_
-from acct_mgr.guard import AccountGuard
+from .admin import fetch_user_data
+from .api import AccountManager, tag_
+from .guard import AccountGuard
 
 
 class AccountManagerWikiMacros(Component):
@@ -82,8 +82,8 @@ A misc placeholder with this statement is presented to unprivileged users.
         else:
             args, kw = parse_args(content)
         if name == 'ProjectStats':
-            if 'wiki' in kw.keys():
-                prefix = 'prefix' in kw.keys() and kw['prefix'] or None
+            if 'wiki' in kw:
+                prefix = 'prefix' in kw and kw['prefix'] or None
                 wiki = WikiSystem(env)
                 if kw['wiki'] == 'count' or 'count' in args:
                     return tag(len(list(wiki.get_pages(prefix))))
@@ -91,13 +91,13 @@ A misc placeholder with this statement is presented to unprivileged users.
             msg_no_perm = tag.p(tag_("(required %(perm)s missing)",
                                      perm=tag.strong('USER_VIEW')),
                                 class_='hint')
-            if 'perm' in kw.keys():
+            if 'perm' in kw:
                 perm_sys = PermissionSystem(self.env)
                 users = perm_sys.get_users_with_permission(kw['perm'].upper())
             else:
                 acct_mgr = AccountManager(env)
                 users = list(set(acct_mgr.get_users()))
-            if 'locked' in kw.keys() or 'locked' in args:
+            if 'locked' in kw or 'locked' in args:
                 guard = AccountGuard(env)
                 locked = []
                 for user in users:
@@ -107,7 +107,7 @@ A misc placeholder with this statement is presented to unprivileged users.
                     users = locked
                 else:
                     users = list(set(users) - set(locked))
-            elif 'visit' in kw.keys() or 'visit' in args:
+            elif 'visit' in kw or 'visit' in args:
                 if 'USER_VIEW' not in req.perm:
                     return msg_no_perm
                 cols = []
@@ -134,7 +134,7 @@ A misc placeholder with this statement is presented to unprivileged users.
                         if not username == name:
                             users.pop(users.index(username))
                             users.append(name)
-            if not users and 'nomatch' in kw.keys():
+            if not users and 'nomatch' in kw:
                 return format_to_oneliner(env, formatter.context,
                                           kw['nomatch'])
             users = sorted(users)

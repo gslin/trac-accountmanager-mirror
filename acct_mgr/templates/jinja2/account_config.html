@@ -1,0 +1,1158 @@
+# extends 'admin.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+    # block admintitle
+    ${dgettext("acct_mgr", "Accounts: Configuration")}
+    # endblock admintitle
+    </title>
+  </head>
+
+  <body>
+    # block adminpanel
+    <h2>${dgettext("acct_mgr", "Accounts: Configuration")}</h2>
+
+    <div>
+      <ul id="progress">
+        # for step in steps
+        #   set url = href.admin('accounts', 'config', step=loop.index0 != 0 and loop.index0 or None)
+        <li${{'class': 'past' if step.past else ('active' if loop.index0 == active else None),
+              'id': loop.index == len(steps) and 'last' or None,
+              'style': 'width:' + (100 // len(steps))|string + '%',
+             }|htmlattr}>
+          <span>
+            <a href="${url}">${loop.index}</a>
+          </span>
+          <a href="${url}"${{'title': step.image and step.label}|htmlattr}>
+            # if step.image
+            <img class="icon" alt="${step.label}" height="32" width="32"
+                 src="${href.chrome('acct_mgr', step.image + '.png')}" />
+            # else
+            ${step.label}
+            # endif
+          </a>
+        </li>
+        # endfor
+      </ul>
+
+      <form id="cfg_wiz" method="post" action="${href.admin('accounts', 'config')}">
+        ${jmacros.form_token_input()}
+
+        ## Top navigation
+        <div class="buttons">
+          # if active > 0
+          #   if active < len(steps) - 1
+          <input type="submit" name="back"
+                 title="${dgettext('acct_mgr', 'Apply changes and go back')}"
+                 value="${dgettext('acct_mgr', 'Previous')}"/>
+          #   else
+          <input type="submit" name="prev"
+                 title="${dgettext('acct_mgr', 'Go back')}"
+                 value="${dgettext('acct_mgr', 'Previous')}"/>
+          #   endif
+          # endif
+          # if active < len(steps) - 1
+          <input type="submit" name="next"
+                 title="${dgettext('acct_mgr', 'Apply changes and go on')}"
+                 value="${dgettext('acct_mgr', 'Next')}"/>
+          # endif
+          ## Last value cache for stepping through pages back and forth
+          <input type="hidden" name="active" value="${active}"/>
+        </div>
+
+        # if active == 0
+        ## Page 1
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          <h3>${dgettext('acct_mgr', 'Objective for setting Authentication Options')}</h3>
+          <p>${
+            dgettext("acct_mgr",
+                     "Decide, whether to use HTTP authentication (Trac default) or "
+                     "a HTML login form provided by AccountManagerPlugin.")
+          }</p>
+          <p>${
+            dgettext("acct_mgr",
+                     "After initial login Trac sessions are authenticated per request "
+                     "based on browser cookies. Therefore a number of options provide "
+                     "control over some critical browser cookie properties.")
+          }</p>
+          <h3>${dgettext('acct_mgr', 'Provider-agnostic Authentication Options')}</h3>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="ignore_auth_case" value="true"
+                     title="[trac] ignore_auth_case"
+                     ${{'checked': ignore_auth_case}|htmlattr} />
+              ${dgettext('acct_mgr', 'Convert login names to lower case on registration and login.')}
+            </label>
+            <p class="hint">${
+              i18n_tag(
+                dgettext("acct_mgr",
+                         "Adapt to careless username typing, where casing does not matter, like"
+                         " on Windows. Potentially troublesome, because [1:case matters for "
+                         "Trac permission assignment lookup] anyway."),
+                'tt')
+            }</p>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="check_auth_ip" value="true"
+                     title="[trac] check_auth_ip"
+                     ${{'checked': check_auth_ip}|htmlattr} />
+              ${dgettext('acct_mgr', 'Check IP address for authentication.')}
+            </label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "Potentially troublesome for users with dynamic IP "
+                       "address, but disregarded for persistent sessions.")
+            }</p>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="secure_cookies" value="true"
+                     title="[trac] secure_cookies"
+                     ${{'checked': secure_cookies}|htmlattr} />
+              ${dgettext('acct_mgr', 'Restrict sending cookies to HTTPS connections.')}
+            </label>
+            <p class="hint">${
+              dgettext('acct_mgr', 'Required, if the Trac instance is only accessible through HTTPS.')
+            }</p>
+          </div>
+          <div class="field">
+            ## Last value cache for JS code
+            <input type="hidden" id="auth_cookie_lifetime_old"
+                   value="${auth_cookie_lifetime}" disabled="disabled" />
+            # set lifetime_value = (auth_cookie_lifetime or 2592000) if acctmgr_login else auth_cookie_lifetime
+            <label>${
+              i18n_tag(
+                dgettext("acct_mgr",
+                         "Lifetime of the authentication cookie: [1:] seconds [2:(%(timedelta)s)]"),
+                tag.input(type="text", class_="numwidget",
+                          name="auth_cookie_lifetime",
+                          title="[trac] auth_cookie_lifetime",
+                          value=auth_cookie_lifetime),
+                tag.span(class_='hint',
+                         style=None if lifetime_value else 'display:none'),
+                timedelta=pretty_precise_timedelta(None, diff=lifetime_value))
+            }</label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "Determines how long the browser will cache authentication "
+                       "information, and therefore, after how much inactivity a user will "
+                       "have to log in again. Default (0 s) makes cookie expire at "
+                       "browsing sessions end.")
+            }</p>
+          </div>
+
+          <h3>${dgettext('acct_mgr', 'Authentication Front-end')}</h3>
+          <div class="field">
+            <label>
+              <input type="radio" name="acctmgr_login" value="0"
+                     title="[components] trac.web.auth.loginmodule"
+                     ${{'checked': not acctmgr_login}|htmlattr} />
+              ${
+                dgettext("acct_mgr",
+                         "Use HTTP authentication and credentials as "
+                         "configured in and provided by your web-server.")
+              }
+            </label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "You can still manage some password stores with "
+                       "AccountManagerPlugin, if you configure them in the next step.")
+            }</p>
+            <label>
+              <input type="radio" name="acctmgr_login" value="1"
+                     title="[components] acct_mgr.web_ui.loginmodule"
+                     ${{'checked': acctmgr_login}|htmlattr} />
+              ${
+                dgettext("acct_mgr",
+                         "Use a HTML login form backed by one or more "
+                         "password stores managed by AccountManagerPlugin.")
+              }
+            </label>
+            <p class="hint">${
+              i18n_tag(
+                dgettext(
+                  "acct_mgr",
+                  "AccountManagerPlugin provides a custom version of the [1:LoginModule]"
+                  " accompanied by a form-based HTML login page."),
+                'strong')
+            }</p>
+            <p class="hint">${
+              i18n_tag(
+                dgettext(
+                  "acct_mgr",
+                  "If you enable this feature, you'll want to review and adjust some "
+                  "more options related to session authentication. Note, that "
+                  "AccountManagerPlugin's LoginModule [1:changes the default lifetime of"
+                  " authentication cookies to 30 days]."),
+                'tt')
+            }</p>
+          </div>
+
+          <div id="acctmgr_login_opts">
+            <h3>${dgettext('acct_mgr', 'AccountManagerPlugin Authentication Options')}</h3>
+            <div class="field">
+              <label>
+                <input type="checkbox" name="login_opt_list" value="true"
+                       title="[account-manager] login_opt_list"
+                       ${{'checked': login_opt_list}|htmlattr} />
+                ${dgettext("acct_mgr", "Integrate links to related actions "
+                                       "into the login form.")}
+              </label>
+              ${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "[1:If enabled, links to][2:[3:[4:Lost password/Password "
+                    "reset]][5:[6:Registration for new users]]][7:that normally reside in "
+                    "Trac's meta-navigation bar, will appear inside the login form. CSS "
+                    "styling allows further customization of the login prompt.]"
+                  ),
+                  tag.p(class_='hint'), 'ul',
+                  'li', tag.span(class_='hint'), 'li', tag.span(class_='hint'),
+                  tag.p(class_='hint'),
+                )
+              }
+            </div>
+            <div class="field">
+              <label>
+                <input type="checkbox" name="persistent_sessions" value="true"
+                       title="[account-manager] persistent_sessions"
+                       ${{'checked': persistent_sessions}|htmlattr} />
+                ${
+                  dgettext("acct_mgr",
+                           "Allow the user to be remembered across sessions "
+                           "without needing to re-authenticate.")
+                }
+              </label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "This is, user checks a \"Remember Me\" [1:checkbox] in the "
+                    "AccountManagerPlugin login form and, next time he visits the site "
+                    "within 30 days, he'll be remembered and authenticated automatically."),
+                  'tt')
+              }</p>
+            </div>
+            <div class="field">
+              <label>${
+                i18n_tag(
+                  dgettext("acct_mgr", "Likelihood of session cookie ID change: [1:] % per work hour"),
+                  tag.input(type="text", class_="numwidget", name="cookie_refresh_pct",
+                            title="[account-manager] cookie_refresh_pct",
+                            value=cookie_refresh_pct))
+              }</label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "Driving a refresh process to decrease vulnerability of long-lasting "
+                    "sessions. Zero means [1:never]."),
+                  'tt')
+              }</p>
+            </div>
+            <div class="field">
+              <label>
+                ${dgettext("acct_mgr", "Path for authentication cookie:")}
+                <input type="text" class="textwidget" name="auth_cookie_path"
+                       title="[trac] auth_cookie_path"
+                       value="${auth_cookie_path}"/>
+              </label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "This enables AccountManagerPlugin's authentication data distribution "
+                    "to Trac instances with matching cookie path. Set this to a common "
+                    "base path of several Trac instances to share the cookie, providing a "
+                    "cheap [1:Single-Sign-On] experience."),
+                  'tt')
+              }</p>
+            </div>
+          </div>
+        </fieldset>
+
+        # elif active == 1
+        ## Page 2
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          <img class="icon" alt="${dgettext('acct_mgr', 'Password store')}"
+               src="${href.chrome('/acct_mgr/users.png')}" />
+
+          <h3>${dgettext('acct_mgr', 'Objective for configuring a Password Store')}</h3>
+          <p>${
+            dgettext("acct_mgr",
+                     "AccountManagerPlugin manages user credentials in a modular "
+                     "back-end providing access to at least one password store.")
+          }</p>
+
+          # if len(password_store) == 0
+          <div>
+            <h3>${dgettext('acct_mgr', 'Initial Authentication Back-end selection')}</h3>
+            ## Initial setup content
+            <div class="field">
+              <label>
+                <input type="radio" name="init_store" value="no"
+                       title="[account-manager] password_store"
+                       ${{'checked': init_store == 'db'}|htmlattr} />
+                ${dgettext('acct_mgr', 'Use a password store embedded into Trac db.')}
+              </label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "The [1:SessionStore] implements password storage in Trac db table "
+                    "'session_attribute'. Its the default choice mainly for avoiding "
+                    "additional dependencies like directory and file permissions."),
+                  'strong')
+              }</p>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "While great to resolve some concurrent access issues too, this "
+                         "password store has shortcomings as well. Notably it does not "
+                         "support seamless hash type migration, and its no candidate for "
+                         "shared use by multiple Trac instances or even by applications "
+                         "beyond Trac.")
+              }</p>
+              <fieldset class="ini" id="db">
+                <legend class="foldable">${
+                  dgettext("acct_mgr", "Details (Preview)")
+                }</legend>
+                <div class="compact">
+                  <pre>${init_store_hint.db}</pre>
+                  <p class="hint">${
+                    dgettext("acct_mgr",
+                             "Please apply these default options first. "
+                             "You'll be able to change values afterwards.")
+                  }</p>
+                </div>
+              </fieldset>
+            </div>
+            <div class="field">
+              <label>
+                <input type="radio" name="init_store" value="file"
+                       ${{'checked': init_store in ('htdigest', 'htpasswd')}|htmlattr} />
+                ${dgettext('acct_mgr', 'Use a file-based password store.')}
+              </label>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "AccountManagerPlugin includes native support for common Apache "
+                         "file formats 'htpasswd' and 'htdigest' as well as support for "
+                         "reading svnserve's password file format.")
+              }</p>
+              <p class="hint">
+                dgettext("acct_mgr",
+                         "You may use the same file for several Trac environments.  Note "
+                         "that setting appropriate directory and file permissions is "
+                         "crucial for these stores, but not covered by this configuration "
+                         "wizard.")
+              }</p>
+            </div>
+            <fieldset id="init_store_file">
+              <div class="field">
+                <label>
+                  <input type="radio" name="init_store_file" value="htdigest"
+                         title="[account-manager] password_store"
+                         ${{'checked': init_store == 'htdigest' or not htpasswd}|htmlattr} />
+                  ${
+                    i18n_tag(
+                      dgettext("acct_mgr", "'htdigest' format [1:([2:HtDigestStore])]"),
+                      tag.span(class_='hint'), 'strong')
+                  }
+                </label>
+                <fieldset class="ini" id="htdigest">
+                  <legend class="foldable">${dgettext("acct_mgr", "Details (Preview)")}</legend>
+                  <div class="compact">
+                    <pre>${init_store_hint.htdigest}</pre>
+                    <p class="hint">${
+                      dgettext("acct_mgr",
+                               "Please apply these default options first. "
+                               "You'll be able to change values afterwards.")
+                    }</p>
+                  </div>
+                </fieldset>
+              </div>
+              <div class="field">
+                <label>
+                  <input type="radio" name="init_store_file" value="htpasswd"
+                         title="[account-manager] password_store"
+                         ${{'checked': init_store == 'htpasswd'}|htmlattr} />
+                  ${
+                    i18n_tag(
+                      dgettext("acct_mgr", "'htpasswd' format [1:([2:HtPasswdStore])]"),
+                      tag.span(class_='hint'), 'strong')
+                  }
+                </label>
+                <fieldset class="ini" id="htpasswd">
+                  <legend class="foldable">${dgettext("acct_mgr", "Details (Preview)")}</legend>
+                  <div class="compact">
+                    <pre>${init_store_hint.htpasswd}</pre>
+                    <p class="hint">${
+                      dgettext("acct_mgr",
+                               "Please apply these default options first. "
+                               "You'll be able to change values afterwards.")
+                    }</p>
+                  </div>
+                </fieldset>
+              </div>
+              <div class="field">
+                <label>
+                  <input type="radio" name="init_store_file" value="svn_file"
+                         title="[account-manager] password_store"
+                         ${{'checked': init_store == 'svn_file'}|htmlattr} />
+                  ${
+                    i18n_tag(
+                      dgettext("acct_mgr", "svnserve's password file format [1:([2:SvnServePasswordStore])]"),
+                      tag.span(class_='hint'), 'strong')
+                  }
+                </label>
+                <fieldset class="ini" id="svn_file">
+                  <legend class="foldable">${dgettext("acct_mgr", "Details (Preview)")}</legend>
+                  <div class="compact">
+                    <pre>${init_store_hint.svn_file}</pre>
+                    <p class="hint">${
+                      dgettext("acct_mgr",
+                               "Please apply these default options first. "
+                               "You'll be able to change values afterwards.")
+                    }</p>
+                  </div>
+                </fieldset>
+              </div>
+            </fieldset>
+            <div class="field">
+              <label>
+                <input type="radio" name="init_store" value="http"
+                       title="[account-manager] password_store"
+                       ${{'checked': init_store == 'http'}|htmlattr} />
+                ${dgettext('acct_mgr', 'Delegate authentication using HTTP authentication.')}
+              </label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "AccountManagerPlugin enables use of standard HTTP-Auth by its "
+                    "[1:HttpAuthStore] component. Both Basic and Digest authentication "
+                    "challenges are supported."),
+                  'strong')
+              }</p>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "In addition to being read-only this password store does "
+                         "not even support listing users for obvious reasons.")
+              }</p>
+              <fieldset class="ini" id="http">
+                <legend class="foldable">${dgettext("acct_mgr", "Details (Preview)")}</legend>
+                <div class="compact">
+                  <pre>${init_store_hint.http}</pre>
+                  <p class="hint">${
+                    dgettext("acct_mgr",
+                             "Please apply these default options first. "
+                             "You'll be able to change values afterwards.")
+                  }</p>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="field">
+              <label>
+                ## Disabled to speed-up initial publication
+                <input type="radio" name="init_store" value="etc" disabled="disabled"
+                       title="[account-manager] password_store"
+                       ${{'checked': init_store == 'etc'}|htmlattr} />
+                ${dgettext('acct_mgr', 'Use a different password store.')}
+              </label>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "AccountManagerPlugin's modular password store concept "
+                         "encourages creation of more ways to provide user credential "
+                         "beyond the natively supported stores. While a specific setup "
+                         "assistance for these 3rd-party authentication providers is not "
+                         "implemented, you may fill-in appropriate configuration details "
+                         "for an already installed component below.")
+              }</p>
+            </div>
+            <fieldset id="etc_store_cfg">
+              <legend>${dgettext('acct_mgr', 'Configuration')}</legend>
+              <div class="compact field">
+                <textarea name="etc_cfg">${init_store_hint.http}</textarea>
+                <p class="hint">${
+                  dgettext("acct_mgr",
+                           "Type the custom configuration options as provided "
+                           "by that components documentation and apply it.")
+                }</p>
+              </div>
+            </fieldset>
+          </div>
+          # else
+          <div>
+            ## Standard page content
+            <h3>${dgettext('acct_mgr', 'Password Store Configuration')}</h3>
+            <p>${
+              i18n_tag(
+                dgettext(
+                  "acct_mgr",
+                  "All enabled stores are listed below, but most won't work at all "
+                  "without additional configuration.[1:]Currently configured: "
+                  "[2:%(store_list)s]"),
+                'br', tag.em(title='[account-manager] password_store'),
+                store_list=', '.join(password_store))
+            }</p>
+            # if len(password_store) > 1
+            <p class="hint">${
+              dgettext('acct_mgr', 'This is an experts-only type of store configuration.')
+            }</p>
+            # endif
+
+            # if disabled_store
+            <div class="system-message">
+              <p>
+                <strong>${
+                  i18n_tag(dgettext("acct_mgr",
+                                    "Required disabled component(s): [1:%(components)s]"),
+                           'em',
+                           components=', '.join(disabled_store))
+                }</strong>
+              </p>
+            </div>
+            # endif
+            <p>${
+              dgettext("acct_mgr",
+                       "Select one or more stores and configure related options. "
+                       "Concurrent use of multiple password stores is supported too.")
+            }</p>
+            <p class="hint">${
+              dgettext('acct_mgr', 'Password stores are queried in turn, so order matters.')
+            }</p>
+
+            # for section in store_list
+            <fieldset>
+              <legend>
+                <label>
+                  <select name="${section.classname}">
+                    # for order in store_count
+                    <option value="${order}"${{'selected': order == section.order}|htmlattr}>${
+                      order if order != 0 else '--'
+                    }</option>
+                    # endfor
+                  </select>
+                  ${section.name}
+                </label>
+              </legend>
+              # for option in section.options
+              <div class="field">
+                <label>
+                  ${option.label}:
+                  # if option.value is mapping and 'error' in option.value.keys()
+                  <div class="system-message">
+                    <p>${option.value['error']}</p>
+                  </div>
+                  # elif option.value is mapping
+                  <select name="${option.name}">
+                    # for opt in option.value['options']
+                    <option class="textwidget" value="${opt}"${
+                            {'selected': opt == option.value['selected']}|htmlattr}>
+                      ${opt}
+                    </option>
+                    # endfor
+                  </select>
+                  # else
+                  <input type="text" class="textwidget"
+                         name="${option.name}" value="${option.value}" />
+                  # endif
+                </label>
+                # if option.doc
+                <p class="hint">${option.doc}</p>
+                # endif
+              </div>
+              # endfor
+            </fieldset>
+            # endfor
+
+            <div class="field">
+              <label>
+                <input type="checkbox" name="refresh_passwd" value="true"
+                       title="[account-manager] refresh_passwd"
+                       ${{'checked': refresh_passwd}|htmlattr} />
+                ${dgettext('acct_mgr', 'Silently update password hashes on next successful login.')}
+              </label>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "Use it after changing hash type or to migrate to a "
+                         "new primary password store.")
+              }</p>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "The update will run only once. Restarting the procedure "
+                         "for all accounts allows to propagate subsequent changes.")
+              }</p>
+              <div class="buttons">
+                <input type="submit" name="restart" id="restart"
+                       value="${dgettext('acct_mgr', 'Restart')}" />
+              </div>
+            </div>
+          </div>
+          # endif
+        </fieldset>
+
+        # elif active == 2
+        ## Page 3
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          <img class="icon" alt="${dgettext('acct_mgr', 'Password refresh')}"
+               src="${href.chrome('/acct_mgr/refresh.png')}" />
+
+          <h3>${dgettext('acct_mgr', 'Objective for Password Policy rules')}</h3>
+          <p>${
+            dgettext("acct_mgr",
+                     "While AccountManagerPlugin does not enforce password rules in "
+                     "general, there are some other ways to alter password handling.")
+          }</p>
+
+          <div class="field">
+            <label>
+              <input type="checkbox" name="reset_password" value="true"
+                     title="[account-manager] reset_password"
+                     ${{'checked': reset_password}|htmlattr} />
+              ${dgettext('acct_mgr', 'Enable the password reset procedure.')}
+            </label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "It relies on a working email sender for Trac, "
+                       "supporting both TracAnnouncer and TracNotification.")
+            }</p>
+          </div>
+          <div class="field">
+            <label>${
+              i18n_tag(
+                dgettext(
+                  "acct_mgr",
+                  "Length of the randomly-generated passwords: [1:] characters"),
+                tag.input(type="text", class_="numwidget",
+                          name="generated_password_length",
+                          title="[account-manager] generated_password_length",
+                          value=generated_password_length))
+            }</label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "These passwords are used as alternative passwords on request.")
+            }</p>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="force_passwd_change" value="true"
+                     title="[account-manager] force_passwd_change"
+                     ${{'checked': force_passwd_change}|htmlattr} />
+              ${dgettext("acct_mgr", "Force users to change passwords after a "
+                                     "password reset.")}
+            </label>
+          </div>
+        </fieldset>
+
+        # elif active == 3
+        <!--! Page 4 -->
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          <img class="icon" alt="${dgettext('acct_mgr', 'Account approval')}"
+               src="${href.chrome('/acct_mgr/approval.png')}" />
+          <h3>${
+            dgettext('acct_mgr', 'Objective for Account Registration and Verification rules')
+          }</h3>
+          <p>${
+            dgettext("acct_mgr",
+                     "You may require administrative approval of new accounts for the "
+                     "user registration process. The ability to immediately ban existing "
+                     "accounts is another, related but independent feature.")
+          }</p>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="change_uid_enabled" value="true"
+                     title="[components] acct_mgr.model.*"
+                     ${{'checked': change_uid_enabled}|htmlattr} />
+              ${dgettext('acct_mgr', 'Allow administrative user ID changes.')}
+            </label>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="acctmgr_register" value="true"
+                     title="[components] acct_mgr.register.RegistrationModule"
+                     ${{'checked': acctmgr_register}|htmlattr} />
+              ${dgettext('acct_mgr', 'Allow users to register for a new account.')}
+            </label>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="allow_delete_account" value="true"
+                     title="[account-manager] allow_delete_account"
+                     ${{'checked': allow_delete_account}|htmlattr} />
+              ${dgettext('acct_mgr', 'Allow users to delete their own account.')}
+            </label>
+          </div>
+
+          <h3>${
+            dgettext('acct_mgr', 'Checks to use for validating Registration requests')
+          }</h3>
+          <p>${
+            i18n_tag(
+              dgettext(
+                "acct_mgr",
+                "All checks provided by AccountManagerPlugin are enabled per default, "
+                "but some are configurable on their own.[1:]Currently configured: "
+                "[2:%(check_list)s]"),
+              'br',
+              tag.em(title='[account-manager] register_check'),
+              check_list=', '.join(register_check),
+            )
+          }</p>
+          <p class="hint">${
+            i18n_tag(
+              dgettext(
+                "acct_mgr",
+                "Checks like [1:BotTrapCheck] won't work at all without additional "
+                "configuration."),
+              'strong')
+          }</p>
+          # if disabled_check
+          <div class="system-message">
+            <p>
+              <strong>${
+                i18n_tag(
+                  dgettext("acct_mgr",
+                           "Required disabled component(s): [1:%(components)s]"),
+                  'em',
+                  components=', '.join(disabled_check))
+              }</strong>
+            </p>
+          </div>
+          # endif
+          <p>${
+            dgettext("acct_mgr",
+                     "Select one or more checks and configure related options. "
+                     "Concurrent use of multiple registration checks is encouraged.")
+          }</p>
+          <p class="hint">${
+            dgettext("acct_mgr",
+                     "Checks are applied in turn, so order matters. Note that "
+                     "some checks are used to validate admin user actions too.")
+          }</p>
+
+          # for section in check_list
+          <fieldset>
+            <legend>
+              <label>
+                <select name="${section.classname}" >
+                  # for order in check_count
+                  <option${{'value': order, 'selected': order == section.order}|htmlattr}>
+                    ${order if order != 0 else '--'}
+                  </option>
+                  # endfor
+                </select>
+                ${section.name}
+              </label>
+            </legend>
+            # if section.doc
+            <div xml:space="preserve">${safe_wiki_to_html(context, section.doc)}</div>
+            # endif
+
+            # for option in section.options
+            <div class="field">
+              <label>
+                ${option.label}:
+                # if option.value is mapping and 'error' in option.value.keys()
+                <div class="system-message">
+                  <p>${option.value['error']}</p>
+                </div>
+                # elif option.value is mapping
+                <select name="${option.name}">
+                  # for opt in option.value['options']
+                  <option${{'class': 'textwidget', 'value': opt,
+                            'selected': opt == option.value['selected'],
+                           }|htmlattr}>
+                    ${opt}
+                  </option>
+                  # endfor
+                </select>
+                # else
+                <input type="text" class="textwidget" name="${option.name}" value="${option.value}" />
+                # endif
+              </label>
+              # if option.doc
+              <p class="hint">${option.doc}</p>
+              # endif
+            </div>
+            # endfor
+          </fieldset>
+          # endfor
+
+          <h3>${dgettext('acct_mgr', 'Other Account Policy options')}</h3>
+          <div id="acctmgr_register_opts">
+            <div class="field">
+              <label>
+                <input type="checkbox" name="require_approval" value="true"
+                       title="[account-manager] require_approval"
+                       ${{'checked': require_approval}|htmlattr} />
+                ${dgettext('acct_mgr', 'Require administrative account approval after registration.')}
+              </label>
+              <p class="hint">${
+                dgettext("acct_mgr",
+                         "For admin notification on registration time it "
+                         "relies on a working email sender for Trac, "
+                         "supporting both TracAnnouncer and TracNotification.")
+              }</p>
+            </div>
+          </div>
+          <div class="field">
+            <label>
+              <input type="checkbox" name="verify_email" value="true"
+                     title="[account-manager] verify_email"
+                     ${{'checked': verify_email}|htmlattr} />
+              ${dgettext('acct_mgr', 'Force users to verify their email addresses.')}
+            </label>
+            <p class="hint">${
+              dgettext("acct_mgr",
+                       "For sending a verification token to the user it relies "
+                       "on a working email sender for Trac, supporting both "
+                       "TracAnnouncer and TracNotification.")
+            }</p>
+          </div>
+        </fieldset>
+
+        # elif active == 4
+        ## Page 5
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          <img class="icon" alt="${dgettext('acct_mgr', 'Account guard')}"
+               src="${href.chrome('/acct_mgr/guard.png')}"/>
+
+          <h3>${dgettext('acct_mgr', 'Objective for Account Protection rules')}</h3>
+          <p>${
+            dgettext(
+              "acct_mgr",
+              "Passwords are often not constructed as carefully as they should be. "
+              "And even a strong passphrase could be sift out, if an attacker is "
+              "able to test millions of variants in hours, if not seconds. "
+              "Firewalls and full-featured web-servers already offer sophisticated "
+              "protection, if one can afford them, handle their installation, "
+              "configuration and maintenance.")
+          }</p>
+          <p>${
+            i18n_tag(
+              dgettext(
+                "acct_mgr",
+                "The [1:AccountGuard] component is another option. It is an add-on to "
+                "AccountManagerPlugin's own [2:LoginModule] and provides account "
+                "protection by discouraging brute-force login attempts."),
+              'strong', 'strong')
+          }</p>
+
+          <div class="field">
+            <label>
+              <input type="checkbox" name="acctmgr_guard" value="true"
+                     title="[components] acct_mgr.guard.AccountGuard"
+                     ${{'checked': acctmgr_guard,
+                        'disabled': not acctmgr_login,
+                       }|htmlattr} />
+              ${dgettext('acct_mgr', 'Enable the guard add-on component.')}
+            </label>
+            # if not acctmgr_login
+            <p class="hint">
+              ${dgettext('acct_mgr', "AccountManagerPlugin's LoginModule is disabled.")}
+            </p>
+            # endif
+          </div>
+          <div id="acctmgr_guard_opts">
+            <div class="field">
+              <label>
+                ${dgettext("acct_mgr", "Failed login attempt count max:")}
+                <input type="text" class="numwidget"
+                       name="login_attempt_max_count"
+                       title="[account-manager] login_attempt_max_count"
+                       value="${login_attempt_max_count}"/>
+              </label>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "Lock user account after the specified number of failed attempts. "
+                    "Value zero means [1:no limit]."),
+                  'strong')
+              }</p>
+            </div>
+            <div id="user_lock_time">
+              <div class="field">
+                <label>${
+                  i18n_tag(
+                    dgettext("acct_mgr", "Drop lock after [1:] seconds"),
+                    tag.input(type="text", class_="numwidget", name="user_lock_time",
+                              title="[account-manager] user_lock_time",
+                              value=user_lock_time))
+                }</label>
+                <p class="hint">${
+                  i18n_tag(
+                    dgettext("acct_mgr", "Zero means [1:unlimited] lock time here."),
+                    'strong')
+                }</p>
+              </div>
+              <div id="user_lock_time_progression">
+                <div class="field">
+                  <label>
+                    ${dgettext("acct_mgr", "Lock time progression factor:")}
+                    <input type="text" class="numwidget" name="user_lock_time_progression"
+                           title="[account-manager] user_lock_time_progression"
+                           value="${user_lock_time_progression}"/>
+                  </label>
+                  <p class="hint">${
+                    dgettext("acct_mgr",
+                             "Extend user account lock duration incrementally. "
+                             "It uses logarithmic calculation with the factor "
+                             "as exponent, accepting decimal numbers >= 1.")
+                  }</p>
+                  ${
+                    i18n_tag(
+                      dgettext(
+                        "acct_mgr",
+                        "[1:Lock time will grow for any value > 1, if the failure "
+                        "happens before lock expiration. I.e. value '2' means][2:"
+                        "[3:[4:double lock time after 2nd failure,]]"
+                        "[5:[6:four times the initial lock time after 3rd,]]"
+                        "[7:[8:eight times as long after 4th failure, etc.]]"
+                        "]",
+                      ),
+                      tag.p(class_='hint'),
+                      'ul',
+                      'li', tag.span(class_='hint'),
+                      'li', tag.span(class_='hint'),
+                      'li', tag.span(class_='hint'),
+                    )
+                  }
+                  <p class="hint">${
+                    dgettext("acct_mgr",
+                             "At any time after lock expiration a login failure "
+                             "will just trigger a lock and set a new lock timeout, "
+                             "but not extend the total lock duration.")
+                  }</p>
+                </div>
+                ## Last value cache for JS code
+                <input type="hidden" id="user_lock_max_time_old"
+                       value="${user_lock_max_time}" disabled="disabled"/>
+                <div id="user_lock_max_time" class="field">
+                  <label>${
+                    i18n_tag(
+                      dgettext("acct_mgr",
+                               "Upper lock time limit: [1:] seconds [2:(%(time)s)]"),
+                      tag.input(type='text', class_='numwidget',
+                                name='user_lock_max_time',
+                                title='[account-manager] user_lock_max_time',
+                                value=user_lock_max_time),
+                      tag.span(class_='hint',
+                               style=None if user_lock_max_time else 'display:none'),
+                      time=pretty_precise_timedelta(None, diff=user_lock_max_time)
+                           if user_lock_max_time else '')
+                  }</label>
+                  <p class="hint">${
+                    dgettext('acct_mgr', 'This is relevant only with a progression factor > 1.')
+                  }</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        # else
+        ## Page 6
+        <fieldset>
+          <legend class="step">${
+            dgettext("acct_mgr", "Step %(step)s: %(label)s",
+                     step=active + 1, label=steps[active].label)
+          }</legend>
+          # if not admin_available
+          <div>
+            <h3>${dgettext('acct_mgr', 'Objective for additional preparation')}</h3>
+            <p>${
+              dgettext('acct_mgr', 'Enable yourself to proceed beyond this initial setup.')
+            }</p>
+            <h3>${dgettext('acct_mgr', 'Initial Admin Account')}</h3>
+            <fieldset>
+              <legend>${dgettext('acct_mgr', 'Add Admin Account:')}</legend>
+              <p>${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "The user will get [1:TRAC_ADMIN] assigned, that inherits all "
+                    "available permissions. One such account is required to configure Trac"
+                    " via the admin web-UI. Create and manage more limited admin accounts "
+                    "as well as actual user accounts on your own later via the Accounts "
+                    "admin panel."),
+                  'strong')
+              }</p>
+              <p class="hint">${
+                i18n_tag(
+                  dgettext(
+                    "acct_mgr",
+                    "In detail: AccountManagerPlugin requires [1:ACCTMGR_USER_ADMIN] for "
+                    "regular user administration, [2:ACCTMGR_CONFIG_ADMIN] for viewing "
+                    "these pages and changing the configuration later. Both are inherited "
+                    "by [3:ACCTMGR_ADMIN] permission. To assign permissions you'll need "
+                    "[4:PERMISSION_GRANT] inherited by [5:PERMISSION_ADMIN] too."),
+                  'strong', 'strong', 'strong', 'strong', 'strong')
+              }</p>
+              <div class="field">
+                <label>
+                  ${dgettext('acct_mgr', 'Username:')}<br />
+                  <input type="text" class="textwidget" id="username"
+                         name="username" value="${acctmgr.username}" />
+                </label>
+                # if ignore_auth_case
+                <p class="hint">${
+                  dgettext('acct_mgr', 'Only lowercase usernames allowed')
+                }</p>
+                # endif
+              </div>
+              <div class="field">
+                <label>
+                  ${dgettext('acct_mgr', 'Password:')}<br />
+                  <input type="password" class="textwidget" name="password"
+                         ${{'disabled': not set_password}|htmlattr} />
+                </label>
+              </div>
+              <div class="field">
+                <label>
+                  ${dgettext('acct_mgr', 'Confirm Password:')}<br />
+                  <input type="password" class="textwidget" name="password_confirm"
+                         ${{'disabled': not set_password}|htmlattr} />
+                </label>
+              </div>
+              # if not password_store
+              <p>${
+                dgettext("acct_mgr",
+                         "Please take care, that the username is known by the "
+                         "HTTP authentication provider.")
+              }</p>
+              # elif not set_password
+              <p>${
+                dgettext("acct_mgr",
+                         "Please take care for a valid username, because no configured "
+                         "password store supports creating a new account.")
+              }</p>
+              # endif
+              <div class="buttons">
+                <input type="submit" name="add" value="${dgettext('acct_mgr', ' Add ')}" />
+              </div>
+            </fieldset>
+          </div>
+          # endif
+
+          <h3>${dgettext('acct_mgr', 'Check-up')}</h3>
+          <ul>
+            # for goal in completion.details
+            <li class="${goal.status}">
+              # if goal.step
+              <a href="${href.admin('accounts', 'config', step=goal.step)}">
+                ${goal.desc}
+              </a>
+              # else
+              ${goal.desc}
+              # endif
+            </li>
+            # endfor
+          </ul>
+          # if admin_available and not completion.ready
+          <p class="hint">${
+            dgettext('acct_mgr', 'Please resolve all issues marked as critical.')
+          }</p>
+          # endif
+
+          # if completion.ready
+          <div>
+            <p>${
+              i18n_tag(
+                dgettext(
+                  "acct_mgr",
+                  "By now you did almost finish AccountManagerPlugin configuration, but "
+                  "any changes are temporary yet. Please test and adjust the "
+                  "configuration as required, or cancel to revert all changes. Apply "
+                  "settings to [1:trac.ini] only if you really want to preserve them "
+                  "permanently."),
+                'em')
+            }</p>
+            ## Final configuration preview listing
+            <fieldset>
+              <legend class="foldable">${dgettext('acct_mgr', 'Details (Preview)')}</legend>
+              <div class="ini">
+                # for section, options in roundup|dictsort
+                [${section}]<br />
+                #   for option, value in options|sort(attribute=0)
+                <span${{'class': 'defaults' if option in roundup_defaults.get(section, {}),
+                       }|htmlattr}>${option} = ${value}</span><br />
+                #   endfor
+                <br />
+                # endfor
+              </div>
+            </fieldset>
+          </div>
+          # endif
+        </fieldset>
+        # endif
+
+        ## Bottom navigation
+        <div class="buttons">
+          # if active > 0
+          #   if active < len(steps) - 1
+          <input type="submit" name="back"
+                 title="${dgettext('acct_mgr', 'Apply changes and go back')}"
+                 value="${dgettext('acct_mgr', 'Previous')}"/>
+          #   else
+          <input type="submit" name="prev"
+                 title="${dgettext('acct_mgr', 'Go back')}"
+                 value="${dgettext('acct_mgr', 'Previous')}"/>
+          #   endif
+          # endif
+          # if active < len(steps) - 1
+          <input type="submit" name="save"
+                 title="${dgettext('acct_mgr', 'Stay on page')}"
+                 value="${dgettext('acct_mgr', 'Apply changes')}" />
+          <input type="submit" name="reset"
+                 title="${dgettext('acct_mgr', 'Drop unsaved changes')}"
+                 value="${dgettext('acct_mgr', 'Refresh')}" />
+          <input type="submit" name="next"
+                 title="${dgettext('acct_mgr', 'Apply changes and go on')}"
+                 value="${dgettext('acct_mgr', 'Next')}" />
+          # else
+          <input type="submit" name="save"
+                 title="${dgettext('acct_mgr', 'Save changes and exit wizard')}"
+                 value="${dgettext('acct_mgr', 'Apply changes')}"
+                 ${{'disabled': not completion.ready}|htmlattr} />
+          <input type="submit" name="exit"
+                 title="${dgettext('acct_mgr', 'Drop changes and exit wizard')}"
+                 value="${dgettext('acct_mgr', 'Cancel')}" />
+          # endif
+        </div>
+      </form>
+    </div>
+
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        // Hide configuration preview sections by default
+        $("fieldset legend.foldable").enableFolding(true);
+      });
+    </script>
+    # endblock adminpanel
+  </body>
+</html>

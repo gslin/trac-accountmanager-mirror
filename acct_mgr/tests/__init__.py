@@ -33,13 +33,13 @@ else:
 
 
 def test_suite():
-    from . import (admin, api, db, guard, htfile, model, register, svnserve,
-                   util)
+    from . import (admin, api, db, guard, htfile, model, pwhash, register,
+                   svnserve, util)
     from ..opt import tests as opt_tests
 
     suite = unittest.TestSuite()
-    for mod in (admin, api, db, guard, htfile, model, register, svnserve, util,
-                opt_tests):
+    for mod in (admin, api, db, guard, htfile, model, pwhash, register,
+                svnserve, util, opt_tests):
         suite.addTest(mod.test_suite())
 
     if INCLUDE_FUNCTIONAL_TESTS:

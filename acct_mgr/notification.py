@@ -17,11 +17,12 @@ from trac.notification.api import (
     NotificationSystem)
 from trac.notification.mail import RecipientMatcher, set_header
 from trac.util.text import exception_to_unicode
-from trac.util.translation import deactivate, reactivate
+from trac.util.translation import deactivate, dgettext, reactivate
 from trac.web.chrome import Chrome
 
-from acct_mgr.api import IAccountChangeListener, _, dgettext
-from acct_mgr.compat import genshi_template_args
+from .api import IAccountChangeListener, _
+from .compat import iteritems
+from .util import i18n_tag
 
 
 class NotificationError(TracError):
@@ -61,10 +62,10 @@ class AccountChangeListener(Component):
     }
 
     def __init__(self):
-        self._notify_categories = []
-        for action, category in self.action_category_map.iteritems():
-            if action in self._notify_actions:
-                self._notify_categories.append(category)
+        self._notify_categories = [category
+                                   for action, category
+                                   in iteritems(self.action_category_map)
+                                   if action in self._notify_actions]
 
     # IAccountChangeListener methods
 
@@ -214,9 +215,8 @@ class AccountChangeNotificationAdminPanel(Component):
                                        sep=' ')
         notify_actions = cfg.getlist('notify_actions')
         data = {
-            '_dgettext': dgettext,
+            'i18n_tag': i18n_tag,
             'notify_actions': notify_actions,
             'notify_addresses': notify_addresses
         }
-        return genshi_template_args(self.env, 'account_notification.html',
-                                    data)
+        return 'account_notification.html', data

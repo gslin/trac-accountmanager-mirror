@@ -16,11 +16,10 @@ from trac.core import Component, implements
 from trac.perm import PermissionCache, PermissionSystem
 from trac.test import EnvironmentStub, Mock
 
-from acct_mgr.admin import ExtensionOrder, ConfigurationAdminPanel, \
-                           UserAdminPanel
-from acct_mgr.api import AccountManager, IAccountRegistrationInspector
-from acct_mgr.db import SessionStore
-from acct_mgr.register import BasicCheck, RegistrationError
+from ..admin import ExtensionOrder, ConfigurationAdminPanel, UserAdminPanel
+from ..api import AccountManager, IAccountRegistrationInspector
+from ..db import SessionStore
+from ..register import BasicCheck, RegistrationError
 
 
 class BadCheck(Component):

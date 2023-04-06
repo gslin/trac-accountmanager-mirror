@@ -70,6 +70,8 @@ class FunctionalTester(object):
         tc.submit()
         tc.notfind("The passwords must match.")
         tc.notfind(internal_error)
-        tc.find('Your username has been successfully registered but your '
-                'account still requires activation')
+        tc.find(r'Your username has been successfully registered but your '
+                r'account still requires activation\. Please login as user '
+                r'<strong>{0}</strong>, and follow the instructions\.'
+                .format(re.escape(username)))
         tc.url('/login$')

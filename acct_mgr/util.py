@@ -12,12 +12,18 @@
 
 import os
 import re
-import sys
-import urllib2
 
-from acct_mgr.api import _, ngettext
+try:
+    from babel.support import LazyProxy
+except ImportError:
+    LazyProxy = None
+
 from trac.config import Option
 from trac.util.datefmt import format_datetime, to_datetime, utc
+from trac.util.html import tag
+
+from .api import _, ngettext
+from .compat import basestring
 
 
 class EnvRelativePathOption(Option):
@@ -28,41 +34,6 @@ class EnvRelativePathOption(Option):
         if not path:
             return path
         return os.path.normpath(os.path.join(instance.env.path, path))
-
-
-# Fix for issue http://bugs.python.org/issue8797 in Python 2.6
-# following Bitten changeset 974.
-if sys.version_info[:2] == (2, 6):
-    import base64
-
-
-    class HTTPBasicAuthHandler(urllib2.HTTPBasicAuthHandler):
-        """Patched version of Python 2.6's HTTPBasicAuthHandler.
-
-        The fix for [1]_ introduced an infinite recursion bug [2]_ into
-        Python 2.6.x that is triggered by attempting to connect using
-        Basic authentication with a bad username and/or password. This
-        class fixes the problem using the simple solution outlined in [3]_.
-
-        .. [1] http://bugs.python.org/issue3819
-        .. [2] http://bugs.python.org/issue8797
-        .. [3] http://bugs.python.org/issue8797#msg126657
-        """
-
-        def retry_http_basic_auth(self, host, req, realm):
-            user, pw = self.passwd.find_user_password(realm, host)
-            if pw is not None:
-                raw = "%s:%s" % (user, pw)
-                auth = 'Basic %s' % base64.b64encode(raw).strip()
-                if req.get_header(self.auth_header, None) == auth:
-                    return None
-                req.add_unredirected_header(self.auth_header, auth)
-                return self.parent.open(req, timeout=req.timeout)
-            else:
-                return None
-
-else:
-    HTTPBasicAuthHandler = urllib2.HTTPBasicAuthHandler
 
 
 # taken from a comment of Horst Hansen
@@ -106,8 +77,8 @@ def pretty_precise_timedelta(time1, time2=None, resolution=None, diff=0):
     # DEVEL: Always reduce resolution as required by `resolution` argument.
     if resolution:
         if age_s < resolution:
-            return _("less than %s"
-                     % pretty_precise_timedelta(None, diff=resolution))
+            delta = pretty_precise_timedelta(None, diff=resolution)
+            return _("less than %s") % delta
     # Get a compact string by stripping non-significant parts.
     if age_s == 0:
         return ''
@@ -148,3 +119,70 @@ def remove_zwsp(text):
     """Strips unicode zero-width and whitespace characters.
     """
     return _zwsp_re.sub('', text)
+
+
+_i18n_tag_re = re.compile(r'(?:\[([1-9][0-9]*)\:)|(?<!\\)\]')
+
+
+def i18n_tag(string, *args, **kwargs):
+    START = 'start'
+    END = 'end'
+    TEXT = 'text'
+
+    def parse(string):
+        stack = [0]
+        while True:
+            mo = _i18n_tag_re.search(string)
+            if not mo:
+                break
+
+            if mo.start() or stack[-1]:
+                yield TEXT, stack[-1], string[:mo.start()]
+            string = string[mo.end():]
+
+            orderno = mo.group(1)
+            if orderno is not None:
+                orderno = int(orderno)
+                stack.append(orderno)
+                yield START, orderno, None
+            else:
+                yield END, stack.pop(), None
+            if not stack:
+                break
+
+        if string:
+            yield TEXT, stack[-1], string
+
+    def to_element(arg):
+        if isinstance(arg, (tuple, list)):
+            arg = tag.__getattr__(arg[0])(**arg[1])
+        elif isinstance(arg, basestring):
+            arg = tag.__getattr__(arg)
+        return arg
+
+    def generate(string, args, kwargs):
+        fragment = tag()
+        args = (fragment,) + tuple(to_element(arg) for arg in args)
+        stack = [fragment]
+        for kind, n, data in parse(string):
+            if kind is TEXT:
+                if data:
+                    stack[-1].append(data % kwargs if kwargs else data)
+                continue
+            if kind is START:
+                if 0 <= n < len(args):
+                    arg = args[n]
+                else:
+                    raise IndexError('index %d out of range (%d given for %r)'
+                                     % (n, len(args), string))
+                stack[-1].append(arg)
+                stack.append(arg)
+                continue
+            if kind is END:
+                stack.pop()
+                continue
+        return fragment
+
+    if LazyProxy and isinstance(string, LazyProxy):
+        string = string.value
+    return generate(string, args, kwargs)

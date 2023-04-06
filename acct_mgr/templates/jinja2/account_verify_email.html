@@ -1,0 +1,55 @@
+# extends 'layout.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block title
+      ${dgettext('acct_mgr', 'Verify Email')}
+      # endblock title
+    </title>
+    # block head
+    ${ super() }
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $('#token').focus();
+      });
+    </script>
+    # endblock head
+  </head>
+
+  <body>
+    # block content
+    <div id="content" class="verify_email">
+      <h1>${dgettext('acct_mgr', 'Verify Email')}</h1>
+
+      <p class="help">${
+        dgettext('acct_mgr',
+                 'An email was sent to %(email)s with a token to verify your '
+                 'new address. Please check your email and enter the token in '
+                 'the form below.', email=req.session.email)
+      }</p>
+      <p>${
+        i18n_tag(
+          dgettext("acct_mgr",
+                   "You can [1:change your email address], if it is incorrect."),
+          tag.a(href=href('prefs')))
+      }</p>
+
+      <form method="post" action="" id="acctmgr_verify_email">
+        ${jmacros.form_token_input()}
+        <div>
+          <label for="token">${dgettext('acct_mgr', 'Verification Token:')}</label>
+          <input type="text" id="token" name="token" class="textwidget" size="10"
+                 ${{'value': token if token is defined}|htmlattr} />
+        </div>
+        <div class="buttons central nav">
+          <input type="submit" name="verify"${{'disabled': button_disabled}|htmlattr}
+                 value="${dgettext('acct_mgr', 'Verify')}" />
+          <input type="submit" name="resend"${{'disabled': button_disabled}|htmlattr}
+                 value="${dgettext('acct_mgr', 'Resend Email')}" />
+        </div>
+      </form>
+    </div>
+    # endblock content
+  </body>
+</html>

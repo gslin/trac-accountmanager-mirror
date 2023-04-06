@@ -11,20 +11,22 @@
 
 from pkg_resources import resource_filename, resource_isdir
 
-from trac.config import BoolOption
-from trac.config import Option, OrderedExtensionsOption
+from trac.config import BoolOption, Option, OrderedExtensionsOption
 from trac.core import Component, ExtensionPoint, Interface, TracError
 from trac.core import implements
 from trac.perm import IPermissionRequestor, PermissionCache
-from trac.util.compat import cleandoc
-from trac.util.text import exception_to_unicode
-from trac.util.translation import dgettext, domain_functions
+from trac.util.text import cleandoc, exception_to_unicode
+from trac.util.translation import domain_functions
 from trac.web.chrome import ITemplateProvider, add_warning
 from trac.web.main import IRequestFilter
 
+from .compat import use_jinja2
+
+DOMAIN = 'acct_mgr'
+
 add_domain, _, N_, gettext, ngettext, tag_ = \
-    domain_functions('acct_mgr', ('add_domain', '_', 'N_', 'gettext',
-                                  'ngettext', 'tag_'))
+    domain_functions(DOMAIN, ('add_domain', '_', 'N_', 'gettext', 'ngettext',
+                              'tag_'))
 
 cleandoc_ = cleandoc
 
@@ -222,7 +224,8 @@ class AccountManager(Component):
             This is enforced upon new user registration.""")
 
     _htdocs_dir = resource_filename(__name__, 'htdocs')
-    _templates_dir = resource_filename(__name__, 'templates')
+    _templates_dir = resource_filename(
+        __name__, 'templates/%s' % ('jinja2' if use_jinja2 else 'genshi'))
 
     def __init__(self):
         # Bind the 'acct_mgr' catalog to the specified locale directory.
@@ -275,8 +278,8 @@ class AccountManager(Component):
             if result:
                 self._notify('created', user, password)
             elif not overwrite:
-                raise TracError(_(
-                    "Password for user %s existed, couldn't create." % user))
+                raise TracError(_("Password for user %(user)s existed, "
+                                  "couldn't create.", user=user))
             else:
                 self._notify('password_changed', user, password)
         else:
@@ -307,7 +310,7 @@ class AccountManager(Component):
             del_method(user)
         # Delete session attributes, session and any custom permissions
         # set for the user.
-        from acct_mgr.model import delete_user
+        from .model import delete_user
         delete_user(self.env, user)
         self._notify('deleted', user)
 
@@ -391,7 +394,7 @@ class AccountManager(Component):
         # authenticated session, that a new user can refer to later on.
         # Strictly required to create a primary key for additional attributes,
         # perhaps even something as critical as the SessionStore password.
-        from acct_mgr.model import prime_auth_session, set_user_attribute
+        from .model import prime_auth_session, set_user_attribute
         try:
             prime_auth_session(self.env, username)
             # Save attributes for the user with reference to that session ID.
@@ -408,11 +411,11 @@ class AccountManager(Component):
         finally:
             if not self.has_user(username):
                 # Rollback.
-                from acct_mgr.model import delete_user
+                from .model import delete_user
                 delete_user(self.env, username)
 
     def _maybe_update_hash(self, user, password):
-        from acct_mgr.model import get_user_attribute, set_user_attribute
+        from .model import get_user_attribute, set_user_attribute
         if get_user_attribute(self.env, user, 1,
                               'password_refreshed', 1) == [0]:
             self.log.debug("Refresh password for user: %s", user)

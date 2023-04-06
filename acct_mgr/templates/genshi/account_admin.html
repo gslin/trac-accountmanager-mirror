@@ -7,9 +7,6 @@
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       i18n:domain="acct_mgr">
   <xi:include href="admin.html" />
-  <?python
-    if _dgettext:
-        dgettext = _dgettext ?>
   <head>
     <title>Account</title>
     <script type="text/javascript">
@@ -30,9 +27,10 @@
           <py:otherwise>
             <i18n:msg params="user">for <b>$user</b></i18n:msg>
           </py:otherwise>
-          <img src="${href.chrome('/acct_mgr/info.png')}" alt="info"
+          <img py:if="not change_uid_enabled"
+               src="${href.chrome('/acct_mgr/info.png')}" alt="${''}"
                title="User ID change requires additional components enabled"
-               height="16" width="16" py:if="not change_uid_enabled" />
+               height="16" width="16" />
         </p>
       </div>
 
@@ -147,10 +145,13 @@
           <legend><label>Account Status</label></legend>
           <div id="user_locked" py:if="approval or user_locked">
             <p>
-              <span py:if="release_time and not approval" i18n:msg="time">
+              <span py:if="release_time and not approval">
                 <img src="${href.chrome('/acct_mgr/time-locked.png')}" />
-                This account has been locked until ${release_time}<br />
-                and even valid login attempts are rejected meanwhile.</span>
+                <i18n:msg params="time">
+                  This account has been locked until ${release_time}<br /><!--!
+               -->and even valid login attempts are rejected meanwhile.
+                </i18n:msg>
+              </span>
               <span py:if="approval or not release_time">
                 <img src="${href.chrome('/acct_mgr/locked.png')}" />
                 This account has been locked permanently.
@@ -166,26 +167,16 @@
 
           <div id="restricted" py:if="lock_count" py:choose="">
             <div py:when="not lock_count == 0">
-              <i18n:choose numeral="lock_count" params="count"
-                           py:if="not _dgettext">
-                <p i18n:singular="">
-                  Time lock condition has been met ${lock_count} time by now.
-                </p>
-                <p i18n:plural="">
-                  Time lock condition has been met ${lock_count} times by now.
-                </p>
+              <i18n:choose numeral="lock_count" params="count">
+                <p i18n:singular="">Time lock condition has been met ${lock_count} time by now.</p>
+                <p i18n:plural="">Time lock condition has been met ${lock_count} times by now.</p>
               </i18n:choose>
-              <!--! i18n:choose doesn't play nicely with Trac releases
-                before Trac 0.12, so we provide an alternative message
-                that is excluded from extraction and translation. -->
-              <p py:if="_dgettext" xml:lang="en">
-                Time lock condition has been met ${lock_count} time(s) by now.
-              </p>
-              <p py:if="not (approval or (user_locked and not release_time))"
-                 i18n:msg="time">
-                Therefore after another failed login attempt authentication
-                for this account would be retarded by ${pretty_lock_time}.
-              </p>
+              <p py:if="not (approval or (user_locked and not release_time))">${
+                dgettext("acct_mgr",
+                         "Therefore after another failed login attempt "
+                         "authentication for this account would be retarded "
+                         "by %(time)s.", time=pretty_lock_time)
+              }</p>
             </div>
             <div py:otherwise="">
               <p>Lock condition has not been met yet.</p>
@@ -199,30 +190,35 @@
 
           <div id="user_store" py:if="user_store">
             <p i18n:msg="order_num,store">
-              Credentials for this user are stored in AuthStore number
-              <em>${store_order_num}</em> (${user_store}).</p>
+              Credentials for this user are stored in AuthStore number <!--!
+           --><em>${store_order_num}</em> (${user_store}).
+            </p>
             <p class="hint" py:if="ignore_auth_case" i18n:msg="">
-              Username matching is set to <b>not case-sensitive</b>.</p>
+              Username matching is set to <b>not case-sensitive</b>.
+            </p>
             <p class="hint" py:if="not ignore_auth_case" i18n:msg="">
-              Username matching is set to <em>case-sensitive</em>.</p>
+              Username matching is set to <em>case-sensitive</em>.
+            </p>
           </div>
           <div id="no_user_store" py:if="not (approval or user_store)">
             <p i18n:msg="">
-              No readable store provides credentials for this user,
-              so the user may not get authenticated and access to this
-              <em>account might be effectively blocked</em>.</p>
+              No readable store provides credentials for this user, <!--!
+           -->so the user may not get authenticated and access to this <!--!
+           --><em>account might be effectively blocked</em>.
+            </p>
           </div>
           <div py:if="acctmgr.email">
             <p i18n:msg="email">
-              Current email address: &lt;${acctmgr.email}&gt;</p>
+              Current email address: &lt;${acctmgr.email}&gt;
+            </p>
             <py:choose py:if="verification">
-              <p py:when="email_verified">
-                This address has been verified successfully.</p>
+              <p py:when="email_verified">This address has been verified successfully.</p>
               <p py:when="not email_verified and email_verification_token" i18n:msg="token">
-                Verification is pending
-                <span class="hint">(token: ${email_verification_token})</span></p>
-              <p py:otherwise=""> <!--! not email_verified -->
-                This address has not been verified yet.</p>
+                Verification is pending <span class="hint">(token: ${email_verification_token})</span>
+              </p>
+              <p py:otherwise=""><!--! not email_verified -->
+                This address has not been verified yet.
+              </p>
             </py:choose>
           </div>
           <div py:if="not acctmgr.email">
@@ -232,9 +228,11 @@
 
         <fieldset>
           <legend><label>Access History</label></legend>
-          <p py:if="last_visit" i18n:msg="time">
-            Last login: ${last_visit}</p>
-          <p py:if="not last_visit">The user has not logged in before.</p>
+          <p>${
+            dgettext('acct_mgr', 'Last login: %(time)s', time=format_datetime(last_visit)) \
+            if last_visit else \
+            dgettext('acct_mgr', 'The user has not logged in before.')
+          }</p>
           <div id="failed_attempts" py:if="attempts_count">
             <p i18n:msg="count">Total failed attempts: ${attempts_count}</p>
             <p class="tableheader">
@@ -249,13 +247,12 @@
               <tbody>
                 <tr py:for="attempt in attempts">
                   <td>${attempt.ipnr}</td>
-                  <td>${attempt.time}</td>
+                  <td>${format_datetime(attempt.time)}</td>
                 </tr>
               </tbody>
             </table>
             <div class="buttons" py:if="not user_locked">
               <input type="submit" name="delete"
-                     alt="Delete login failure log"
                      title="Delete login failure log"
                      value="${dgettext('acct_mgr', 'Delete Log')}" />
             </div>

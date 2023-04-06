@@ -9,22 +9,31 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
-import urllib2
-import urlparse
+import sys
+if sys.version_info[0] == 2:
+    from urlparse import urlparse
+    from urllib2 import (HTTPPasswordMgrWithDefaultRealm,
+                         HTTPBasicAuthHandler, HTTPDigestAuthHandler,
+                         build_opener)
+else:
+    from urllib.parse import urlparse
+    from urllib.request import (HTTPPasswordMgrWithDefaultRealm,
+                                HTTPBasicAuthHandler, HTTPDigestAuthHandler,
+                                build_opener)
 
 from trac.config import Option
 from trac.core import Component, implements
 from trac.web.href import Href
 
-from acct_mgr.api import IPasswordStore, N_
-from acct_mgr.util import HTTPBasicAuthHandler
+from .api import IPasswordStore, N_
 
 
 class HttpAuthStore(Component):
+
     implements(IPasswordStore)
 
     auth_url = Option('account-manager', 'authentication_url', '',
-        doc="URL of the HTTP authentication service")
+        doc=N_("URL of the HTTP authentication service"))
 
     def check_password(self, username, password):
         self.log.debug("Trac.ini authentication_url = '%s'", self.auth_url)
@@ -35,7 +44,7 @@ class HttpAuthStore(Component):
         # Handle server-relative URLs.
         elif self.auth_url.startswith('/'):
             # Prepend the Trac server component.
-            pr = urlparse.urlparse(self.env.abs_href())
+            pr = urlparse(self.env.abs_href())
             href = Href(pr[0] + '://' + pr[1])
             auth_url = href(self.auth_url)
         elif '/' in self.auth_url:
@@ -46,11 +55,11 @@ class HttpAuthStore(Component):
             auth_url = self.env.abs_href.chrome('common', self.auth_url)
         self.log.debug("Final auth_url = '%s'", auth_url)
 
-        acctmgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        acctmgr = HTTPPasswordMgrWithDefaultRealm()
         acctmgr.add_password(None, auth_url, username, password)
         try:
-            urllib2.build_opener(HTTPBasicAuthHandler(acctmgr),
-                                 urllib2.HTTPDigestAuthHandler(acctmgr))\
+            build_opener(HTTPBasicAuthHandler(acctmgr),
+                                 HTTPDigestAuthHandler(acctmgr))\
                    .open(auth_url)
         except IOError as e:
             if hasattr(e, 'code') and e.code == 404:

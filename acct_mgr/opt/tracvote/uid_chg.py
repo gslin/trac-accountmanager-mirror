@@ -8,7 +8,7 @@
 #
 # Author: Steffen Hoffmann <hoff.st@web.de>
 
-from acct_mgr.model import PrimitiveUserIdChanger
+from ...model import PrimitiveUserIdChanger
 
 
 class TracVoteUserIdChanger(PrimitiveUserIdChanger):

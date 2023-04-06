@@ -9,25 +9,28 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
+import base64
 import hashlib
-import re
-from binascii import hexlify
-from os import urandom
 
-from acct_mgr.api import _
-from acct_mgr.md5crypt import md5crypt
+try:
+    import passlib
+except ImportError:
+    passlib = None
+
+try:
+    import crypt
+except ImportError:
+    crypt = None
+
 from trac.config import Option
 from trac.core import Component, Interface, implements
 
-try:
-    from passlib.apps import custom_app_context as passlib_ctxt
-except ImportError:
-    # not available
-    # Hint: Python2.5 is required too
-    passlib_ctxt = None
+from .api import _, N_
+from .compat import compare_digest, unicode
 
 
 class IPasswordHashMethod(Interface):
+
     def generate_hash(user, password):
         pass
 
@@ -42,120 +45,172 @@ class HtPasswdHashMethod(Component):
         doc="Default hash type of new/updated passwords")
 
     def generate_hash(self, user, password):
-        password = password.encode('utf-8')
-        return mkhtpasswd(password, self.hash_type)
+        return generate_hash(password, self.hash_type)
 
     def check_hash(self, user, password, hash):
-        password = password.encode('utf-8')
-        hash2 = htpasswd(password, hash)
-        return hash == hash2
+        return check_hash(password, hash)
 
 
 class HtDigestHashMethod(Component):
+
     implements(IPasswordHashMethod)
 
     realm = Option('account-manager', 'db_htdigest_realm', '',
-        doc="Realm to select relevant htdigest db entries")
+        doc=N_("Realm to select relevant htdigest db entries"))
 
     def generate_hash(self, user, password):
-        user, password, realm = _encode(user, password, self.realm)
-        return ':'.join([realm, htdigest(user, realm, password)])
+        hash_ = htdigest(user, self.realm, password)
+        return '%s:%s' % (self.realm, hash_)
 
     def check_hash(self, user, password, hash):
-        return hash == self.generate_hash(user, password)
-
-
-def _encode(*args):
-    return [a.encode('utf-8') for a in args]
-
-
-# check for the availability of the "crypt" module for checking passwords on
-# Unix-like platforms
-# MD5 is still used when adding/updating passwords with htdigest
-try:
-    from crypt import crypt
-except ImportError:
-    crypt = None
-
-
-def salt(salt_char_count=8):
-    s = ''
-    v = long(hexlify(urandom(int(salt_char_count / 8 * 6))), 16)
-    itoa64 = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-    for i in range(int(salt_char_count)):
-        s += itoa64[v & 0x3f]
-        v >>= 6
-    return s
-
-
-def hash_prefix(hash_type):
-    """Map hash type to salt prefix."""
-    if hash_type == 'md5':
-        return '$apr1$'
-    elif hash_type == 'sha':
-        return '{SHA}'
-    elif hash_type == 'sha256':
-        return '$5$'
-    elif hash_type == 'sha512':
-        return '$6$'
-    else:
-        # use 'crypt' hash by default anyway
-        return ''
-
-
-def htpasswd(password, hash):
-    def from_hash(hash):
-        match = re.match(r'\$[5,6]\$(?:rounds=(\d+)\$)?([./\w]+)', hash)
-        groups = match.groups()
-        rounds = int(groups[0]) if groups[0] is not None else 5000
-        salt = groups[1]
-        return rounds, salt
-
-    if hash.startswith('$apr1$'):
-        return md5crypt(password, hash[6:].split('$')[0], '$apr1$')
-    elif hash.startswith('{SHA}'):
-        return '{SHA}' + hashlib.sha1(password).digest().encode('base64')[:-1]
-    elif passlib_ctxt is not None and hash.startswith('$5$') and \
-                    'sha256_crypt' in passlib_ctxt.policy.schemes():
-        rounds, salt = from_hash(hash)
-        return passlib_ctxt.encrypt(password, scheme='sha256_crypt',
-                                    rounds=rounds, salt=salt)
-    elif passlib_ctxt is not None and hash.startswith('$6$') and \
-                    'sha512_crypt' in passlib_ctxt.policy.schemes():
-        rounds, salt = from_hash(hash)
-        return passlib_ctxt.encrypt(password, scheme='sha512_crypt',
-                                    rounds=rounds, salt=salt)
-    elif crypt is None:
-        # crypt passwords are only supported on Unix-like systems
-        raise NotImplementedError(_("The \"crypt\" module is unavailable "
-                                    "on this platform."))
-    else:
-        if hash.startswith('$5$') or hash.startswith('$6$'):
-            # Import of passlib failed, now check, if crypt is capable.
-            if not crypt(password, hash).startswith(hash):
-                # No, so bail out.
-                raise NotImplementedError(_(
-                    "Neither are \"sha2\" hash algorithms supported by the "
-                    "\"crypt\" module on this platform nor is \"passlib\" "
-                    "available."))
-        return crypt(password, hash)
-
-
-def mkhtpasswd(password, hash_type=''):
-    hash_prefix_ = hash_prefix(hash_type)
-    if hash_type.startswith('sha') and len(hash_type) > 3:
-        salt_ = salt(16)
-    else:
-        # Don't waste entropy to older hash types.
-        salt_ = salt()
-    if hash_prefix_ == '':
-        if crypt is None:
-            salt_ = '$apr1$' + salt_
-    else:
-        salt_ = hash_prefix_ + salt_
-    return htpasswd(password, salt_)
+        return compare_digest(hash, self.generate_hash(user, password))
 
 
 def htdigest(user, realm, password):
-    p = ':'.join([user, realm, password])
+    p = ':'.join([user, realm, password]).encode('utf-8')
     return hashlib.md5(p).hexdigest()
+
+
+if passlib:
+    from passlib.context import CryptContext
+    from passlib.hash import bcrypt
+    from .compat import itervalues
+
+    _passlib_schemes = {
+        'sha256': 'sha256_crypt',
+        'sha512': 'sha512_crypt',
+        'md5': 'apr_md5_crypt',
+        'crypt': 'des_crypt',
+    }
+    try:
+        bcrypt.get_backend()
+    except passlib.exc.MissingBackendError:
+        pass
+    else:
+        _passlib_schemes['bcrypt'] = 'bcrypt'
+    _passlib_context = CryptContext(schemes=list(itervalues(_passlib_schemes)))
+
+    if not hasattr(_passlib_context, 'handler'):
+        # passlib 1.5 and early
+        def _passlib_hash(password, scheme):
+            return _passlib_context.encrypt(password, scheme=scheme)
+    elif hasattr(_passlib_context.handler('sha512_crypt'), 'hash'):
+        # passlib 1.7+
+        def _passlib_hash(password, scheme):
+            handler = _passlib_context.handler(scheme)
+            return handler.hash(password)
+    else:
+        # passlib 1.6
+        def _passlib_hash(password, scheme):
+            handler = _passlib_context.handler(scheme)
+            return handler.encrypt(password)
+
+    def _passlib_generate_hash(password, method):
+        if method == 'sha':
+            return _sha_digest(password)
+        if method not in _passlib_schemes:
+            method = 'crypt'
+        scheme = _passlib_schemes[method]
+        return _passlib_hash(password, scheme)
+
+    def _passlib_check_hash(password, the_hash):
+        if the_hash.startswith('{SHA}'):
+            return compare_digest(the_hash, _sha_digest(password))
+        try:
+            return _passlib_context.verify(password, the_hash)
+        except ValueError:
+            return False
+
+else:
+    _passlib_generate_hash = _passlib_check_hash = None
+
+
+if not crypt:
+    _crypt_generate_hash = _crypt_check_hash = None
+
+elif hasattr(crypt, 'methods'):  # Python 3
+    from trac.util import salt, md5crypt
+
+    def _crypt_methods():
+        pairs = [
+            ('crypt', 'METHOD_CRYPT'),
+            ('sha256', 'METHOD_SHA256'),
+            ('sha512', 'METHOD_SHA512'),
+            ('bcrypt', 'METHOD_BLOWFISH'),
+        ]
+        pairs = [(name, getattr(crypt, method, None)) for name, method
+                                                      in pairs]
+        return dict((name, method) for name, method in pairs if method)
+
+    _crypt_methods = _crypt_methods()
+
+    def _crypt_generate_hash(password, method):
+        if method == 'md5':
+            return md5crypt(password, salt(), '$apr1$')
+        if method == 'sha':
+            return _sha_digest(password)
+        if method not in _crypt_methods:
+            method = 'crypt'
+        return crypt.crypt(password, crypt.mksalt(_crypt_methods[method]))
+
+    def _crypt_check_hash(password, the_hash):
+        if the_hash.startswith('$apr1$'):
+            salt = the_hash[6:].split('$', 1)[0]
+            hash_ = md5crypt(password, salt, '$apr1$')
+        elif the_hash.startswith('{SHA}'):
+            hash_ = _sha_digest(password)
+        else:
+            hash_ = crypt.crypt(password, the_hash)
+        return compare_digest(hash_, the_hash)
+
+else:  # Python 2
+    from trac.util import salt, md5crypt
+
+    def _crypt_generate_hash(password, method):
+        password = password.encode('utf-8') \
+                   if isinstance(password, unicode) else password
+        if method == 'md5':
+            return md5crypt(password, salt(2), '$apr1$')
+        if method == 'sha':
+            return _sha_digest(password)
+        return crypt.crypt(password, salt(2))
+
+    def _crypt_check_hash(password, the_hash):
+        password = password.encode('utf-8') \
+                   if isinstance(password, unicode) else password
+        if the_hash.startswith('$apr1$'):
+            salt = the_hash[6:].split('$', 1)[0]
+            hash_ = md5crypt(password, salt, '$apr1$')
+        elif the_hash.startswith('{SHA}'):
+            hash_ = _sha_digest(password)
+        else:
+            hash_ = crypt.crypt(password, the_hash)
+        return compare_digest(hash_, the_hash)
+
+
+def _sha_digest(password):
+    digest = hashlib.sha1(password.encode('utf-8')).digest()
+    return u'{SHA}' + unicode(base64.b64encode(digest), 'ascii')
+
+
+def _unavai_error():
+    return NotImplementedError(_("Neither passlib nor crypt module available"))
+
+def _unavai_generate_hash(password, method):
+    raise _unavai_error()
+
+def _unavai_check_hash(password, the_hash):
+    raise _unavai_error()
+
+
+if passlib:
+    generate_hash = _passlib_generate_hash
+    check_hash = _passlib_check_hash
+
+elif crypt:
+    generate_hash = _crypt_generate_hash
+    check_hash = _crypt_check_hash
+
+else:
+    generate_hash = _unavai_generate_hash
+    check_hash = _unavai_check_hash

@@ -11,10 +11,14 @@
 import unittest
 from datetime import datetime
 
-from acct_mgr.util import pretty_precise_timedelta, remove_zwsp
+from trac.util.html import Fragment, tag
+
+from ..compat import unicode
+from ..util import i18n_tag, pretty_precise_timedelta, remove_zwsp
 
 
 class UtilTestCase(unittest.TestCase):
+
     def test_pretty_precise_timedelta(self):
         yesterday = datetime(2012, 12, 14)
         today = datetime(2012, 12, 15)
@@ -52,6 +56,38 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(u'user', remove_zwsp(u'u\U000e0100ser'))
         self.assertEqual(u'user', remove_zwsp(u'u\U000e01efser'))
         self.assertEqual(u'u\U000e01f0ser', remove_zwsp(u'u\U000e01f0ser'))
+
+    def test_i18n_tag(self):
+
+        def do_i18n_tag(string, *args):
+            result = i18n_tag(string, *args)
+            self.assertIsInstance(result, Fragment)
+            return unicode(result).replace(u'<br/>', '<br />')
+
+        self.assertEqual(
+            do_i18n_tag('Try [1:downloading] the file instead',
+                        tag.a(href='http://localhost/')),
+            'Try <a href="http://localhost/">downloading</a> the file instead',
+        )
+        self.assertEqual(
+            do_i18n_tag('[1:Note:] See [2:TracBrowser] for help ...',
+                        tag.strong, tag.a(href='data:')),
+            '<strong>Note:</strong> See <a href="data:">TracBrowser</a> for '
+            'help ...',
+        )
+        self.assertEqual(
+            do_i18n_tag('[1:Note:] See [2:TracBrowser] for help ...',
+                        'strong', ('a', {'href': 'data:'})),
+            '<strong>Note:</strong> See <a href="data:">TracBrowser</a> for '
+            'help ...',
+        )
+        self.assertEqual(
+            do_i18n_tag('Powered by [1:[2:Trac]][3:]By [4:Edgewall Software]',
+                        tag.a(href='/about'), 'strong', 'br',
+                        tag.a(href='https://www.edgewall.org/')),
+            'Powered by <a href="/about"><strong>Trac</strong></a><br />By '
+            '<a href="https://www.edgewall.org/">Edgewall Software</a>',
+        )
 
 
 def test_suite():

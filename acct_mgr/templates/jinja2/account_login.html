@@ -1,0 +1,92 @@
+# extends 'layout.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block title
+      ${dgettext("acct_mgr", "Login")}
+      # endblock title
+    </title>
+    # block head
+    ${ super() }
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $("body").addClass("login");
+        $('#username').focus();
+      });
+    </script>
+    # endblock head
+  </head>
+
+  <body>
+    # block content
+    <div id="content" class="login">
+      <h1>${dgettext("acct_mgr", "Login")}</h1>
+
+      <form method="post" id="acctmgr_loginform" action="">
+        ${jmacros.form_token_input()}
+        <div>
+          <input type="hidden" name="referer" value="${referer}" />
+        </div>
+        <div class="textbox">
+          <label>
+            ${dgettext('acct_mgr', 'Username:')}<br />
+            <input type="text" id="username" name="username" class="textwidget" size="20" />
+          </label>
+        </div>
+        <div class="textbox">
+          <label for="password">
+            ${dgettext('acct_mgr', 'Password:')}<br />
+            <input type="password" id="password" name="password" class="textwidget" size="20" />
+          </label>
+        </div>
+        <div id="login_options" class="central">
+          # if reset_password_enabled and not login_opt_list
+          <div class="central">
+            <p class="hint">
+              <a href="${href.reset_password()}">${dgettext('acct_mgr', 'Forgot your password?')}</a>
+            </p>
+          </div>
+          # endif
+          # if persistent_sessions
+          <div class="textbox">
+            <input type="checkbox" id="rememberme" name="rememberme" value="1" />
+            <label for="rememberme">${dgettext('acct_mgr', 'Remember me')}</label>
+          </div>
+          # endif
+          <div class="buttons">
+            <input type="submit" value="${dgettext('acct_mgr', 'Login')}" />
+          </div>
+          # if login_opt_list
+          <div class="nav">
+            <ul>
+              # if registration_enabled
+              <li class="${classes(first=True, last=not reset_password_enabled)}">
+                <a href="${href.register()}">${dgettext('acct_mgr', 'Register')}</a>
+              </li>
+              # endif
+              # if reset_password_enabled
+              <li class="${classes(first=not registration_enabled, last=True)}">
+                <a href="${href.reset_password()}">${dgettext('acct_mgr', 'Forgot your password?')}</a>
+              </li>
+              # endif
+            </ul>
+          </div>
+          # endif
+        </div>
+      </form>
+    </div>
+
+    # if login_error
+    <div class="central system-message">
+      <h2>${dgettext('acct_mgr', 'Error')}</h2>
+      <p>${login_error}</p>
+    </div>
+    # else
+    <div class="spacer"></div>
+    # endif
+
+    ${ super() }
+    # endblock content
+  </body>
+</html>

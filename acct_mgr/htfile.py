@@ -10,13 +10,30 @@
 # Author: Matthew Good <trac@matt-good.net>
 
 import errno
+import io
 import os
 
-from acct_mgr.api import IPasswordStore, _
-from acct_mgr.pwhash import htpasswd, mkhtpasswd, htdigest
-from acct_mgr.util import EnvRelativePathOption
 from trac.config import Option
 from trac.core import Component, TracError, implements
+
+from .api import IPasswordStore, _, N_
+from .compat import compare_digest, unicode
+from .pwhash import check_hash, generate_hash, htdigest
+from .util import EnvRelativePathOption
+
+
+def _eachline(filename, encoding='utf-8'):
+    with io.open(filename, 'r', encoding=encoding) as f:
+        for line in f:
+            yield line
+
+
+def _writelines(filename, lines, encoding='utf-8'):
+    with io.open(filename, 'w', encoding=encoding) as f:
+        for line in lines:
+            if isinstance(line, bytes):
+                line = unicode(line, 'utf-8')
+            f.write(line)
 
 
 class AbstractPasswordFileStore(Component):
@@ -34,7 +51,7 @@ class AbstractPasswordFileStore(Component):
         return user in self.get_users()
 
     def get_users(self):
-        filename = str(self.filename)
+        filename = self.filename
         if not os.path.exists(filename):
             self.log.error('acct_mgr: get_users() -- '
                            'Can\'t locate password file "%s"', filename)
@@ -42,31 +59,25 @@ class AbstractPasswordFileStore(Component):
         return self._get_users(filename)
 
     def set_password(self, user, password, old_password=None, overwrite=True):
-        user = user.encode('utf-8')
-        password = password.encode('utf-8')
         return not self._update_file(self.prefix(user),
                                      self.userline(user, password),
                                      overwrite)
 
     def delete_user(self, user):
-        user = user.encode('utf-8')
         return self._update_file(self.prefix(user), None)
 
     def check_password(self, user, password):
-        filename = str(self.filename)
+        filename = self.filename
         if not os.path.exists(filename):
             self.log.error('acct_mgr: check_password() -- '
                            'Can\'t locate password file "%s"', filename)
             return False
-        user = user.encode('utf-8')
-        password = password.encode('utf-8')
         prefix = self.prefix(user)
         try:
-            with open(filename, 'rU') as f:
-                for line in f:
-                    if line.startswith(prefix):
-                        line = line[len(prefix):].rstrip('\n')
-                        return self._check_userline(user, password, line)
+            for line in _eachline(filename):
+                if line.startswith(prefix):
+                    line = line[len(prefix):].rstrip('\n')
+                    return self._check_userline(user, password, line)
         except (OSError, IOError):
             self.log.error('acct_mgr: check_password() -- '
                            'Can\'t read password file "%s"', filename)
@@ -89,17 +100,25 @@ class AbstractPasswordFileStore(Component):
                 _("[%(section)s] %(name)s option for the password "
                   "file is not configured",
                   section=option.section, name=option.name))
-        filename = str(self.filename)
+        filename = self.filename
         matched = False
         new_lines = []
         eol = '\n'
         try:
             # Open existing file read-only to read old content.
-            # DEVEL: Use `with` statement available in Python >= 2.5
-            #   as soon as we don't need to support 2.4 anymore.
-            with open(filename) as f:
-                lines = f.readlines()
-
+            lines = list(_eachline(filename))
+        except EnvironmentError as e:
+            if e.errno == errno.ENOENT:
+                # Ignore, when file doesn't exist and create it below.
+                pass
+            elif e.errno == errno.EACCES:
+                raise TracError(_(
+                    "The password file could not be read. Trac requires read "
+                    "and write access to both the password file and its "
+                    "parent directory."))
+            else:
+                raise
+        else:
             # DEVEL: Beware, in shared use there is a race-condition,
             #   since file changes by other programs that occur from now on
             #   are currently not detected and will get overwritten.
@@ -132,17 +151,6 @@ class AbstractPasswordFileStore(Component):
                     # make sure the (last) line has a newline anyway
                     else:
                         new_lines.append(line.rstrip('\r\n') + eol)
-        except EnvironmentError as e:
-            if e.errno == errno.ENOENT:
-                # Ignore, when file doesn't exist and create it below.
-                pass
-            elif e.errno == errno.EACCES:
-                raise TracError(_(
-                    "The password file could not be read. Trac requires read "
-                    "and write access to both the password file and its "
-                    "parent directory."))
-            else:
-                raise
 
         # Finally add the new line here, if it wasn't used before
         # to update or delete a line, creating content for a new file as well.
@@ -151,8 +159,7 @@ class AbstractPasswordFileStore(Component):
 
         # Try to (re-)open file write-only now and save new content.
         try:
-            with open(filename, 'w') as f:
-                f.writelines(new_lines)
+            _writelines(filename, new_lines)
         except EnvironmentError as e:
             if e.errno == errno.EACCES or e.errno == errno.EROFS:
                 raise TracError(_(
@@ -161,12 +168,6 @@ class AbstractPasswordFileStore(Component):
                     "parent directory."))
             else:
                 raise
-        if f:
-            # Close open file now, even after exception raised.
-            f.close()
-            if not f.closed:
-                self.log.debug('acct_mgr: _update_file() -- '
-                               'Closing password file "%s" failed', filename)
         return matched
 
 
@@ -189,10 +190,10 @@ class HtPasswdStore(AbstractPasswordFileStore):
     implements(IPasswordStore)
 
     filename = EnvRelativePathOption('account-manager', 'htpasswd_file', '',
-        doc="Path relative to Trac environment or full host machine path "
-            "to password file")
+        doc=N_("Path relative to Trac environment or full host machine path "
+               "to password file"))
     hash_type = Option('account-manager', 'htpasswd_hash_type', 'crypt',
-        doc="Default hash type of new/updated passwords")
+        doc=N_("Default hash type of new/updated passwords"))
 
     def config_key(self):
         return 'htpasswd'
@@ -201,17 +202,16 @@ class HtPasswdStore(AbstractPasswordFileStore):
         return user + ':'
 
     def userline(self, user, password):
-        return self.prefix(user) + mkhtpasswd(password, self.hash_type)
+        return self.prefix(user) + generate_hash(password, self.hash_type)
 
     def _check_userline(self, user, password, suffix):
-        return suffix == htpasswd(password, suffix)
+        return check_hash(password, suffix)
 
     def _get_users(self, filename):
-        with open(filename, 'rU') as f:
-            for line in f:
-                user = line.split(':', 1)[0]
-                if user:
-                    yield user.decode('utf-8')
+        for line in _eachline(filename):
+            user = line.split(':', 1)[0]
+            if user:
+                yield user
 
 
 class HtDigestStore(AbstractPasswordFileStore):
@@ -230,30 +230,29 @@ class HtDigestStore(AbstractPasswordFileStore):
     implements(IPasswordStore)
 
     filename = EnvRelativePathOption('account-manager', 'htdigest_file', '',
-        doc="""Path relative to Trac environment or full host machine
-            path to password file""")
+        doc=N_("Path relative to Trac environment or full host machine path "
+               "to password file"))
     realm = Option('account-manager', 'htdigest_realm', '',
-        doc="Realm to select relevant htdigest file entries")
+        doc=N_("Realm to select relevant htdigest file entries"))
 
     def config_key(self):
         return 'htdigest'
 
     def prefix(self, user):
-        return '%s:%s:' % (user, self.realm.encode('utf-8'))
+        return '%s:%s:' % (user, self.realm)
 
     def userline(self, user, password):
-        return self.prefix(user) + htdigest(user, self.realm.encode('utf-8'),
-                                            password)
+        prefix = self.prefix(user)
+        return prefix + htdigest(user, self.realm, password)
 
     def _check_userline(self, user, password, suffix):
-        return suffix == htdigest(user, self.realm.encode('utf-8'), password)
+        hash_ = htdigest(user, self.realm, password)
+        return compare_digest(suffix, hash_)
 
     def _get_users(self, filename):
-        _realm = self.realm.encode('utf-8')
-        with open(filename) as f:
-            for line in f:
-                args = line.split(':')[:2]
-                if len(args) == 2:
-                    user, realm = args
-                    if realm == _realm and user:
-                        yield user.decode('utf-8')
+        for line in _eachline(filename):
+            args = line.split(':')[:2]
+            if len(args) == 2:
+                user, realm = args
+                if realm == self.realm and user:
+                    yield user

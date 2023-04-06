@@ -13,12 +13,17 @@ import os
 import unittest
 
 import twill
+try:
+    import tidylib
+except ImportError:
+    tidylib = None
 
 
 class TwillCommands(object):
 
     def __init__(self, commands):
         self.commands = commands
+        self.browser = commands.browser
 
     def __getattr__(self, name):
         value = getattr(self.commands, name)
@@ -26,15 +31,21 @@ class TwillCommands(object):
             return value
 
         def wrapper(*args, **kwargs):
+            prev = self.browser.result
             try:
-                return value(*args, **kwargs)
-            except twill.errors.TwillAssertionError as e:
+                try:
+                    return value(*args, **kwargs)
+                finally:
+                    result = self.browser.result
+                    if result is not prev and 200 <= result.http_code < 300:
+                        self.commands.tidy_ok()
+            except twill.errors.TwillException as e:
                 testname = _state.testname
                 if not testname:
                     raise
                 filename = os.path.join(_state.testenv.tracdir, 'log',
                                         testname + '.html')
-                html = self.commands.browser.html
+                html = self.browser.html
                 with io.open(filename, 'w', encoding='utf-8') as f:
                     f.write(html)
                 raise twill.errors.TwillAssertionError('%s at %s' %
@@ -44,6 +55,9 @@ class TwillCommands(object):
 
 
 tc = TwillCommands(twill.commands)
+if tidylib:
+    twill.commands.config('require_tidy', 1)
+    twill.commands.config('tidy_show_warnings', 'no')
 
 
 class FunctionalTestState(object):

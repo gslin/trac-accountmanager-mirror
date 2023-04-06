@@ -1,0 +1,222 @@
+# extends 'admin.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block admintitle
+      ${dgettext('acct_mgr', 'Accounts')}
+      # endblock admintitle
+    </title>
+  </head>
+
+  <body>
+    # block adminpanel
+    ## Account property editor
+    <form id="account-editor" class="addnew" method="post">
+      ${jmacros.form_token_input()}
+      <fieldset>
+        <legend>${dgettext('acct_mgr', 'Add New Account:')}</legend>
+        <div class="field">
+          <label>
+            ${dgettext('acct_mgr', 'Username:')}<br />
+            <input type="text" name="username" id="username" class="textwidget"
+                   value="${acctmgr.username}" />
+          </label>
+          # if ignore_auth_case
+          <p class="hint">
+            ${dgettext('acct_mgr', 'Only lowercase usernames allowed')}
+          </p>
+          # endif
+        </div>
+        <div>
+          <div class="field">
+            <label>
+              ${dgettext('acct_mgr', 'Password:')}<br />
+              <input type="password" name="password" class="textwidget"
+                     ${{'disabled': not create_enabled and not password_change_enabled}|htmlattr} />
+            </label>
+          </div>
+          <div class="field">
+            <label>
+              ${dgettext('acct_mgr', 'Confirm Password:')}<br />
+              <input type="password" name="password_confirm" class="textwidget"
+                     ${{'disabled': not create_enabled and not password_change_enabled}|htmlattr} />
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label>
+            ${dgettext('acct_mgr', 'Pre-/Surname (Nickname):')}<br />
+            <input type="text" name="name" class="textwidget" value="${acctmgr.name}" />
+          </label>
+        </div>
+        <div class="field">
+          <label>
+            ${dgettext('acct_mgr', 'Email Address:')}<br />
+            <input type="text" name="email" class="textwidget" value="${acctmgr.email}" />
+          </label><br />
+          # if verify_enabled
+          <label>
+            <input type="checkbox" name="email_approved" value="true"
+                   ${{'checked': email_approved}|htmlattr} />
+            ${dgettext('acct_mgr', 'Skip new email verification')}
+          </label>
+          # endif
+        </div>
+        <div>
+          <div class="buttons">
+            # if create_enabled
+            <input type="submit" name="add" value="${dgettext('acct_mgr', ' Add ')}" />
+            # endif
+          </div>
+        </div>
+      </fieldset>
+    </form>
+
+    # if not listing_enabled
+    <div class="system-message">
+      <p>${dgettext('acct_mgr', 'This password store does not support listing users.')}</p>
+    </div>
+    # else
+    <div id="accounts">
+      <div class="holdingbox">
+        <form class="panel" id="prefs" method="get" action="">
+          <label>${
+            i18n_tag(
+              dgettext("acct_mgr", "Max accounts per page [1:]"),
+              tag.input(type="text", size=3, name="max_per_page", value=accounts.max_per_page))
+          }</label>
+          <div class="buttons">
+            <input type="submit" value="${dgettext('acct_mgr', 'Update')}" />
+          </div>
+        </form>
+      </div>
+    </div>
+    # endif
+
+    ## TRANSLATOR: Position (# to # of #) or total, if not paginating
+    <h2 class="report-result">${
+      i18n_tag(
+        dgettext("acct_mgr", "Accounts [1:(%(count)s)]"),
+        tag.span(class_='trac-count'),
+        count=displayed_items)
+    }</h2>
+
+    <form id="filter" method="get" action="">
+      <fieldset id="filters">
+        <legend class="foldable">${dgettext('acct_mgr', 'Filters')}</legend>
+        <table summary="${dgettext('acct_mgr', 'Filters')}">
+          <th scope="row">${dgettext('acct_mgr', 'Status')}</th>
+          <td class="filter">
+            # for filter in filters
+            <label class="control">
+              <input type="checkbox"${
+                     {'name': 'filter_%s' % filter.name,
+                      'checked': filter.enabled,
+                     }|htmlattr} />
+              ${filter.label}
+            </label>
+            # endfor
+          </td>
+          <td>
+            <div class="inlinebuttons">
+              <input type="submit" name="update" value="${dgettext('acct_mgr', 'Update')}" />
+            </div>
+          </td>
+        </table>
+      </fieldset>
+    </form>
+
+    <form id="manage-accounts" method="post">
+      ${jmacros.form_token_input()}
+
+      # with
+      #   set paginator = accounts
+      #   include "page_index.html"
+      # endwith
+
+      ## Main account list
+      # include "account_user_table.html"
+      # with
+      #   set paginator = accounts
+      #   include "page_index.html"
+      # endwith
+
+      <div class="buttons">
+        # if password_reset_enabled
+        <input type="submit" id="reset" name="reset"
+               title="${dgettext('acct_mgr', 'Send another random password')}"
+               value="${dgettext('acct_mgr', 'Reset passwords')}" />
+        # endif
+        <input type="submit" id="approve" name="approve"
+               title="${dgettext('acct_mgr', 'Approve pending registrations, ban/unban accounts')}"
+               value="${dgettext('acct_mgr', 'Toggle account approval')}" />
+        # if delete_enabled
+        <input type="submit" id="remove" name="remove"
+               title="${dgettext('acct_mgr', 'Delete accounts')}"
+               value="${dgettext('acct_mgr', 'Remove selected items')}" />
+        # endif
+        # if 'ACCTMGR_ADMIN' in req.perm
+        <input type="submit" id="cleanup" name="cleanup"
+               value="${dgettext('acct_mgr', 'Review account attributes')}" />
+        # endif
+      </div>
+    </form>
+
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        // Clear all the checkboxes, to cover the case that the user clicks
+        // the Back button in the browser
+        $("table.listing input:checkbox").prop("checked", false);
+        // Prompt with a confirm dialog when deleting accounts
+        var button_pressed;
+        $("#manage-accounts div.buttons input").click(function() {
+          button_pressed = $(this).attr("name");
+        });
+        $("#manage-accounts").submit(function() {
+          if (button_pressed === "remove")
+            return confirm('${delete_msg_confirm}');
+        })
+        // Disable the submit buttons until at least one checkboxes is checked
+        function setButtonsDisabled(state) {
+          $("#reset, #approve, #remove, #cleanup").attr("disabled", state);
+        }
+        setButtonsDisabled(true);
+        // Add a group toggler checkbox in the header
+        $("table.listing th.sel").html('<input type="checkbox" />').children()
+          .click(function() {
+            $("td.sel input:checkbox", $(this).closest("table.listing"))
+              .prop("checked", this.checked);
+            setButtonsDisabled(!this.checked);
+          });
+        // Toggle the group toggle checkbox and buttons' disable state
+        $("table.listing td.sel input:checkbox").click(function() {
+          var checkboxes = $("input:checkbox", $(this).closest("tbody"));
+          var numChecked = checkboxes.filter(":checked").length;
+          var noneChecked = numChecked === 0;
+          var allChecked = numChecked === checkboxes.length;
+          // Compatibility: the 'indeterminate' can't be set using jQuery's,
+          // 'attr' function, so calling 'prop' wouldn't work with the
+          // compatibility fix that was put in place for 'prop'
+          $("th.sel input:checkbox", $(this).closest("table.listing"))
+            .prop("checked", this.checked)
+            .each(function() {
+              this.indeterminate = !(noneChecked || allChecked);
+            });
+          setButtonsDisabled(noneChecked);
+        });
+        // Hide account filter settings by default
+        $("fieldset legend.foldable").enableFolding(true);
+        // Shrink max_per_page pager preferences after 1st touch
+        $('.holdingbox').hover(function(){
+          $('.panel').stop().animate({height: '6em'}, 250);
+        }, function(){
+          $('.panel').stop().animate({height: '2.4em'}, 1000);
+        });
+        // Set focus on page load
+        $("#username").focus();
+      });
+    </script>
+    # endblock adminpanel
+  </body>
+</html>

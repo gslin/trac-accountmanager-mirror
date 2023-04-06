@@ -30,15 +30,14 @@ from trac.web.chrome import add_warning
 from trac.web.main import IRequestHandler, IRequestFilter, get_environments
 from trac.wiki.api import IWikiPageManipulator
 
-from acct_mgr.api import AccountManager
-from acct_mgr.api import _, dgettext, ngettext, tag_
-from acct_mgr.compat import genshi_template_args
-from acct_mgr.db import SessionStore
-from acct_mgr.guard import AccountGuard
-from acct_mgr.model import last_seen, set_user_attribute
-from acct_mgr.notification import NotificationError
-from acct_mgr.register import RegistrationModule
-from acct_mgr.util import if_enabled, remove_zwsp
+from .api import AccountManager, _, ngettext, tag_
+from .compat import iteritems, process_request_compat
+from .db import SessionStore
+from .guard import AccountGuard
+from .model import last_seen, set_user_attribute
+from .notification import NotificationError
+from .register import RegistrationModule
+from .util import i18n_tag, if_enabled, remove_zwsp
 
 
 class ResetPwStore(SessionStore):
@@ -133,9 +132,9 @@ class AccountModule(Component):
                 yield 'account', _("Account")
 
     def render_preference_panel(self, req, panel):
-        data = dict(_dgettext=dgettext)
+        data = dict(i18n_tag=i18n_tag)
         data.update(self._do_account(req))
-        return genshi_template_args(self.env, 'account_prefs.html', data)
+        return 'account_prefs.html', data
 
     # IRequestFilter methods
 
@@ -181,18 +180,19 @@ class AccountModule(Component):
         return req.path_info == '/reset_password' and \
                self._reset_password_enabled(log=True)
 
+    @process_request_compat
     def process_request(self, req):
-        data = dict(_dgettext=dgettext)
+        data = dict(i18n_tag=i18n_tag)
         if req.authname and req.authname != 'anonymous':
-            add_notice(req, tag_(
-                "You're already logged in. If you need to change your "
-                "password please use the %(prefs_href)s page.",
-                prefs_href=tag.a(_("Account Preferences"),
-                                 href=req.href.prefs('account'))))
+            message = i18n_tag(_("You're already logged in. If you need to "
+                                 "change your password please use the "
+                                 "[1:Account Preferences] page."),
+                               tag.a(href=req.href('prefs/account')))
+            add_notice(req, message)
             data['authenticated'] = True
         if req.method == 'POST':
             self._do_reset_password(req)
-        return 'account_reset_password.html', data, None
+        return 'account_reset_password.html', data
 
     # IAttachmentManipulator
 
@@ -225,7 +225,7 @@ class AccountModule(Component):
             if author and last_seen(self.env, author):
                 # Prevent impersonating an authenticated user in author field.
                 # Use degraded formatting due to T:#6634.
-                return [(_("author"), tag_(
+                return [("author", tag_(
                          "Policy prohibits choosing %(username)s for an "
                          "anonymous session because it's a registered "
                          "username. Please login or choose another author "
@@ -255,10 +255,10 @@ class AccountModule(Component):
             elif action == 'delete' and delete_enabled:
                 self._do_delete(req)
         if force_change_password:
-            add_warning(req, tag_(
-                "You are required to change password because of a recent "
-                "password change request. %(invitation)s",
-                invitation=tag.b(_("Please change your password now."))))
+            add_warning(req, i18n_tag(_("You are required to change password "
+                                        "because of a recent password change "
+                                        "request. [1:Please change your "
+                                        "password now.]"), 'b'))
         return data
 
     def _do_change_password(self, req):
@@ -281,8 +281,8 @@ class AccountModule(Component):
         else:
             _set_password(self.env, req, username, password, old_password)
             if req.session.get('password') is not None:
-                # Fetch all session_attributes in case new user password is in
-                # SessionStore, preventing overwrite by session.save().
+                # Fetch all 'session_attribute's in case new user password is
+                # in SessionStore, preventing overwrite by session.save().
                 req.session.get_session(req.authname, authenticated=True)
             add_notice(req, _("Password updated successfully."))
             return True
@@ -332,7 +332,7 @@ class AccountModule(Component):
         This method is used by acct_mgr.admin.AccountManagerAdminPanel too.
         """
         return ''.join([random.choice(self._password_chars)
-                        for _ in xrange(self.password_length)])
+                        for _ in range(self.password_length)])
 
     def _reset_password(self, req, username, email):
         """Store a new, temporary password on admin or user request.
@@ -405,11 +405,6 @@ class LoginModule(auth.LoginModule):
         the cookie.  (''since 0.12'')""")
 
     # Options dedicated to acct_mgr.web_ui.LoginModule.
-    login_opt_list = BoolOption(
-        'account-manager', 'login_opt_list', False,
-        """Set to True, to switch login page style showing alternative actions
-        in a single listing together.""")
-
     cookie_refresh_pct = IntOption(
         'account-manager', 'cookie_refresh_pct', 10,
         """Persistent sessions randomly get a new session cookie ID with
@@ -496,6 +491,7 @@ class LoginModule(auth.LoginModule):
 
     match_request = if_enabled(auth.LoginModule.match_request)
 
+    @process_request_compat
     def process_request(self, req):
         if req.path_info.startswith('/login') and req.authname == 'anonymous':
             try:
@@ -509,8 +505,7 @@ class LoginModule(auth.LoginModule):
                     referer.startswith(req.abs_href('/captcha')):
                 referer = req.abs_href()
             data = {
-                '_dgettext': dgettext,
-                'login_opt_list': self.login_opt_list,
+                'i18n_tag': i18n_tag,
                 'persistent_sessions':
                     AccountManager(self.env).persistent_sessions,
                 'referer': referer,
@@ -535,10 +530,10 @@ class LoginModule(auth.LoginModule):
                               "%(release_time)s", release_time=release_time)
                     else:
                         data['login_error'] = _("Account locked")
-            return 'account_login.html', data, None
+            return 'account_login.html', data
         else:
             n_plural = req.args.get('failed_logins')
-            if n_plural > 0:
+            if n_plural is not None and n_plural > 0:
                 add_warning(req, tag(ngettext(
                     "Login after %(attempts)s failed attempt",
                     "Login after %(attempts)s failed attempts",
@@ -692,7 +687,7 @@ class LoginModule(auth.LoginModule):
         #   Trac environments managed by AccountManager.
         local_env_name = req.base_path.lstrip('/')
 
-        for env_name, env_path in get_environments(req.environ).iteritems():
+        for env_name, env_path in iteritems(get_environments(req.environ)):
             if env_name != local_env_name:
                 try:
                     # Cache environment for subsequent invocations.

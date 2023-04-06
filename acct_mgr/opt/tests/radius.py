@@ -13,8 +13,9 @@ import shutil
 import tempfile
 import unittest
 
-from acct_mgr.opt.radius import RadiusAuthStore
 from trac.test import EnvironmentStub
+
+from ..radius import RadiusAuthStore
 
 
 class _BaseTestCase(unittest.TestCase):

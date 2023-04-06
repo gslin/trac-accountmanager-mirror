@@ -10,21 +10,12 @@ from setuptools import find_packages, setup
 extra = {}
 
 try:
+    import babel
     from trac.dist import get_l10n_cmdclass
-    from trac.dist import extract_python
 except ImportError:
     pass
 else:
-    cmdclass = get_l10n_cmdclass()
-    if cmdclass:
-        extra['cmdclass'] = cmdclass
-        extractors = [
-            ('**/templates/**.html', 'genshi', None),
-            ('**.py', 'trac.dist:extract_python', None),
-        ]
-        extra['message_extractors'] = {
-            'acct_mgr': extractors,
-        }
+    extra['cmdclass'] = get_l10n_cmdclass()
 
 setup(
     name='TracAccountManager',
@@ -42,12 +33,12 @@ setup(
         'acct_mgr': [
             'htdocs/*.css', 'htdocs/js/*', 'htdocs/*.png',
             'locale/*/LC_MESSAGES/*.mo', 'locale/.placeholder',
-            'templates/*.html', 'templates/*.txt'
+            'templates/*/*.html', 'templates/*/*.txt'
         ]
     },
     test_suite='acct_mgr.tests.test_suite',
     zip_safe=True,
-    install_requires=['Trac', 'Genshi'],
+    install_requires=['Trac'],
     extras_require={
         'Babel': 'Babel>= 0.9.5',
         'announcer': 'TracAnnouncer',

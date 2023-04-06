@@ -10,8 +10,8 @@
 
 from announcer.api import AnnouncementSystem
 
-from acct_mgr.api import _
-from acct_mgr.model import PrimitiveUserIdChanger
+from ...api import _
+from ...model import PrimitiveUserIdChanger
 
 
 class TracAnnouncerUserIdChanger(PrimitiveUserIdChanger):

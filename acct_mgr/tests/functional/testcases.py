@@ -16,6 +16,7 @@ from . import FunctionalTestSuite, FunctionalTestCaseSetup, tc
 
 
 def parse_smtp_message(data):
+    assert data is not None
     if isinstance(data, bytes):
         data = data.decode('utf-8')
     message = email.message_from_string(data)
@@ -150,7 +151,7 @@ class TestFailRegisterPasswdConfirmNotPassed(FunctionalTestCaseSetup):
         tc.formvalue(reg_form_name, 'user', username)
         tc.formvalue(reg_form_name, 'password', username)
         tc.submit()
-        tc.find("The passwords must match.")
+        tc.find(r'The passwords must match\.')
 
 
 class TestFailRegisterDuplicateUsername(FunctionalTestCaseSetup):
@@ -213,21 +214,20 @@ class VerifyNewAccountEmailAddress(FunctionalTestCaseSetup):
         headers, body = parse_smtp_message(self._smtpd.get_message())
         blines = body.splitlines()
         token = [l.split() for l in blines if 'Verification Token' in l][0][-1]
+        warning = (r'<strong>Warning:</strong>\s*'
+                   r'Your permissions have been limited until you <a '
+                   r'href="/trac/verify_email">verify your email address</a>')
 
         tc.find('Logout') # User is logged in from previous test
         self._tester.go_to_front()
-        tc.find(r'<strong>Warning:</strong>\s*'
-                r'Your permissions have been limited until you <a '
-                r'href="/trac/verify_email">verify your email address</a>')
+        tc.find(warning)
         tc.go(self._testenv.url + '/verify_email')
 
         reg_form_name = 'acctmgr_verify_email'
         tc.formvalue(reg_form_name, 'token', token)
         tc.submit('verify')
 
-        tc.notfind('<strong>Warning:</strong> <span>Your permissions have been '
-                   'limited until you <a href="/verify_email">verify your email'
-                   ' address</a></span>')
+        tc.notfind(warning)
         tc.find('Thank you for verifying your email address')
         self._tester.go_to_front()
 
@@ -292,8 +292,8 @@ class UserIsForcedToChangePassword(FunctionalTestCaseSetup):
     def runTest(self):
         """User is forced to change password after resets"""
         tc.find('Logout')
-        tc.find("You are required to change password because of a recent "
-                "password change request.")
+        tc.find(r'You are required to change password because of a recent '
+                r'password change request\.')
 
 
 class UserCantBrowseUntilPasswdChange(PasswdResetsNotifiesUser):
@@ -321,8 +321,8 @@ class UserCantBrowseUntilPasswdChange(PasswdResetsNotifiesUser):
         tc.submit()
 
         tc.notfind("You are required to change password because of a recent "
-                   "password change request.")
-        tc.find("Thank you for taking the time to update your password.")
+                   "password change request")
+        tc.find(r'Thank you for taking the time to update your password\.')
 
         # We can now browse away from /prefs/accounts
         tc.follow('Roadmap')
@@ -379,13 +379,14 @@ class NoEmailVerificationForAnonymousUsers(FunctionalTestCaseSetup):
         email_address = 'anonyous.user@fakedomain.tld'
         tc.formvalue(form_name, 'email', email_address)
         tc.submit()
-        tc.notfind('<strong>Notice:</strong> <span>An email has been sent to '
-                   '%s with a token to <a href="/verify_email">verify your new '
-                   'email address</a></span>' % email_address)
+        tc.notfind(r'<strong>Notice:</strong>\s*<span>An email has been sent '
+                   r'to {0} with a token to <a href="/verify_email">verify '
+                   r'your new email address</a></span>'
+                   .format(re.escape(email_address)))
         self._tester.go_to_front()
-        tc.notfind('<strong>Warning:</strong> <span>Your permissions have been '
-                   'limited until you <a href="/verify_email">verify your email '
-                   'address</a></span>')
+        tc.notfind(r'<strong>Warning:</strong>\s*<span>Your permissions have '
+                   r'been limited until you <a href="/verify_email">verify '
+                   r'your email address</a></span>')
 
 
 def test_suite():

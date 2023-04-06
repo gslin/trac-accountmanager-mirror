@@ -10,9 +10,12 @@
 import hashlib
 import re
 
-from acct_mgr.api import GenericUserIdChanger
 from trac.util import as_int
 from trac.util.text import exception_to_unicode, to_unicode
+
+from .api import GenericUserIdChanger
+from .compat import iteritems
+
 
 _USER_KEYS = {
     'auth_cookie': 'name',
@@ -382,7 +385,7 @@ def _copy_user_attributes(env, username, new_uid, overwrite):
                 attrs_new = None
             # Remove value id hashes.
             attrs[username][1].pop('id')
-            for attribute, value in attrs[username][1].iteritems():
+            for attribute, value in iteritems(attrs[username][1]):
                 if not (attrs_new and attribute in attrs_new[new_uid][1]):
                     db("""
                         INSERT INTO session_attribute
@@ -444,14 +447,14 @@ def get_user_attribute(env, username=None, authenticated=1, attribute=None,
     def unique_id(*values):
         # Generate sha1 digest from NUL value1 NUL value2 NUL value3 NUL
         m = hashlib.sha1()
-        m.update('\0')
+        m.update(b'\0')
         for value in values:
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 value = value.encode('utf-8')
             elif not isinstance(value, str):
-                value = str(value)
+                value = bytes([value])
             m.update(value)
-            m.update('\0')
+            m.update(b'\0')
         return m.hexdigest()
 
     res = {}

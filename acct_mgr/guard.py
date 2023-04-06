@@ -9,13 +9,17 @@
 # Author: Steffen Hoffmann <hoff.st@web.de>
 
 from datetime import timedelta
+import json
+import time
 
-from acct_mgr.model import del_user_attribute, get_user_attribute
-from acct_mgr.model import set_user_attribute, user_known
 from trac.config import IntOption, Option
 from trac.core import Component
 from trac.util.datefmt import format_datetime, pretty_timedelta
 from trac.util.datefmt import to_datetime, to_timestamp
+
+from .compat import unicode
+from .model import (del_user_attribute, get_user_attribute, set_user_attribute,
+                    user_known)
 
 
 class AccountGuard(Component):
@@ -98,11 +102,11 @@ class AccountGuard(Component):
             if log_length > self.login_attempt_max_count:
                 # Truncate attempts list preserving most recent events.
                 del attempts[:(log_length - self.login_attempt_max_count)]
-            attempts.append({'ipnr': ipnr,
-                             'time': to_timestamp(to_datetime(None))})
+            attempts.append({'ipnr': ipnr, 'time': int(time.time())})
             count += 1
             # Update or create attempts counter and list.
-            set_user_attribute(self.env, user, 'failed_logins', str(attempts))
+            set_user_attribute(self.env, user, 'failed_logins',
+                               unicode(attempts))
             set_user_attribute(self.env, user, key, count)
             self.log.debug("AccountGuard.failed_count(%s) = %s", user, count)
         else:

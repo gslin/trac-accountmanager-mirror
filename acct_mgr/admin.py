@@ -9,36 +9,35 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
+from datetime import datetime
 import inspect
 import re
 
-from acct_mgr.api import AccountManager
-from acct_mgr.api import IUserIdChanger
-from acct_mgr.api import _, dgettext, gettext, ngettext, tag_
-from acct_mgr.compat import genshi_template_args
-from acct_mgr.guard import AccountGuard
-from acct_mgr.model import (
-    change_uid, del_user_attribute, email_verification_token, email_verified)
-from acct_mgr.model import get_user_attribute, last_seen, set_user_attribute
-from acct_mgr.notification import NotificationError
-from acct_mgr.register import EmailVerificationModule, RegistrationError
-from acct_mgr.util import pretty_precise_timedelta
-from acct_mgr.web_ui import AccountModule
 from trac.admin import IAdminPanelProvider
 from trac.config import BoolOption, Option
 from trac.core import Component, ExtensionPoint, implements
 from trac.perm import PermissionCache, PermissionSystem
 from trac.util import as_int
-from trac.util.compat import cleandoc
 from trac.util.datefmt import format_datetime, to_datetime
 from trac.util.html import html as tag
 from trac.util.presentation import Paginator
-from trac.util.translation import tagn_
-from trac.util.text import exception_to_unicode
+from trac.util.translation import dgettext, tagn_
+from trac.util.text import cleandoc, exception_to_unicode
 from trac.web.api import IAuthenticator
 from trac.web.chrome import Chrome, add_ctxtnav, add_link, add_notice
 from trac.web.chrome import add_script, add_stylesheet, add_warning
 from trac.wiki.formatter import format_to_html
+
+from .api import AccountManager, IUserIdChanger, _, gettext, ngettext, tag_
+from .compat import iteritems, itervalues
+from .guard import AccountGuard
+from .model import (change_uid, del_user_attribute, email_verification_token,
+                    email_verified, get_user_attribute, last_seen,
+                    set_user_attribute)
+from .notification import NotificationError
+from .register import EmailVerificationModule, RegistrationError
+from .util import i18n_tag, pretty_precise_timedelta
+from .web_ui import AccountModule
 
 
 def fetch_user_data(env, req, filters=None):
@@ -62,8 +61,8 @@ def fetch_user_data(env, req, filters=None):
     verify_email = env.is_enabled(EmailVerificationModule) and \
                    EmailVerificationModule(env).email_enabled and \
                    EmailVerificationModule(env).verify_email
-    for acct, status in get_user_attribute(env, username=None,
-                                           authenticated=None).iteritems():
+    for acct, status in iteritems(get_user_attribute(env, username=None,
+                                                     authenticated=None)):
         account = accounts.get(acct)
         if account is not None and 1 in status:
             # Only use attributes related to authenticated
@@ -101,7 +100,7 @@ def fetch_user_data(env, req, filters=None):
         account = accounts.get(username)
         if account and last_visit:
             account['last_visit'] = to_datetime(last_visit)
-    return sorted(accounts.itervalues(), key=lambda acct: acct['username'])
+    return sorted(itervalues(accounts), key=lambda acct: acct['username'])
 
 
 def _getoptions(cls):
@@ -162,14 +161,14 @@ class ExtensionOrder(dict):
             self.d[key] = value
             self.d[order].remove(key)
             self[value] = key
-        elif isinstance(key, basestring):
+        elif isinstance(key, str):
             self.d[self.sxref[key]] = value
         elif isinstance(key, int):
             self.d.setdefault(key, [])
             self.d[key].append(value)
         else:
-            raise KeyError(_("Invalid key type (%s) for ExtensionOrder")
-                           % str(type(key)))
+            raise KeyError("Invalid key type (%s) for ExtensionOrder" %
+                           type(key))
         pass
 
     def get_enabled_components(self):
@@ -177,7 +176,7 @@ class ExtensionOrder(dict):
 
         All components that are order 0 are dropped from the list.
         """
-        keys = sorted([k for k in self.d.keys() if isinstance(k, int)])
+        keys = sorted(k for k in self.d if isinstance(k, int))
         component_list = []
         for k in keys[1:]:
             component_list.extend(self.d[k])
@@ -190,7 +189,7 @@ class ExtensionOrder(dict):
         return [c.__class__.__name__ for c in components]
 
     def get_all_components(self):
-        return [k for k in self.d.keys() if isinstance(k, Component)]
+        return [k for k in self.d if isinstance(k, Component)]
 
     def component_count(self):
         return len(self.get_all_components())
@@ -226,7 +225,7 @@ class UserAdminPanel(Component):
         if 'ACCTMGR_ADMIN' in req.perm:
             env = self.env
             changed = False
-            # Get data for all authenticated users from 'session_attributes'.
+            # Get data for all authenticated users from 'session_attribute'.
             attr = get_user_attribute(self.env, username=None,
                                       authenticated=1)
             attrs = {}
@@ -236,14 +235,13 @@ class UserAdminPanel(Component):
             if req.args.get('purge') and sel:
                 sel_len = len(sel)
                 matched = []
-                for acct, states in attr.iteritems():
-                    for state in states['id'].keys():
-                        for elem, id in states[state]['id'].iteritems():
+                for acct, states in iteritems(attr):
+                    for state in states['id']:
+                        for elem, id in iteritems(states[state]['id']):
                             if id in sel:
-                                if acct in attrs.keys():
-                                    if state in attrs[acct].keys():
-                                        attrs[acct][state] \
-                                            .append(elem)
+                                if acct in attrs:
+                                    if state in attrs[acct]:
+                                        attrs[acct][state].append(elem)
                                     else:
                                         attrs[acct][state] = [elem]
                                 else:
@@ -256,12 +254,12 @@ class UserAdminPanel(Component):
                     if len(matched) == sel_len:
                         break
                 for id in (frozenset(sel) - frozenset(matched)):
-                    for acct, states in attr.iteritems():
-                        for state, id_ in states['id'].iteritems():
+                    for acct, states in iteritems(attr):
+                        for state, id_ in iteritems(states['id']):
                             if id == id_:
                                 # Full account is marked, forget attributes.
-                                if acct in attrs.keys():
-                                    attrs[acct].update({state: []})
+                                if acct in attrs:
+                                    attrs[acct][state] = []
                                 else:
                                     attrs[acct] = {state: []}
                                 matched.append(id)
@@ -271,8 +269,8 @@ class UserAdminPanel(Component):
                             break
                 # DEVEL: For Python>2.4 better use defaultdict for counters.
                 del_count = {'acct': 0, 'attr': 0}
-                for account, states in attrs.iteritems():
-                    for state, elem in states.iteritems():
+                for account, states in iteritems(attrs):
+                    for state, elem in iteritems(states):
                         if len(elem) == 0:
                             del_user_attribute(env, account, state)
                             del_count['acct'] += 1
@@ -287,18 +285,15 @@ class UserAdminPanel(Component):
                 accounts_ = attributes = ''
                 n_plural = del_count['acct']
                 if n_plural > 0:
-                    accounts_ = tag.li(tag.span(tag(ngettext(
-                        "%(count)s account",
-                        "%(count)s accounts",
-                        n_plural, count=n_plural
-                    ))))
+                    accounts_ = tag.li(ngettext("%(count)s account",
+                                                "%(count)s accounts",
+                                                n_plural, count=n_plural))
                 n_plural = del_count['attr']
                 if n_plural > 0:
-                    attributes = tag.li(tag.span(tag(ngettext(
+                    attributes = tag.li(ngettext(
                         "%(count)s account attribute",
                         "%(count)s account attributes",
-                        n_plural, count=n_plural
-                    ))))
+                        n_plural, count=n_plural))
                 add_notice(req, tag_("Successfully deleted: %(account)s",
                                      account=tag.ul(accounts_, attributes)))
                 # Update the dict after changes.
@@ -307,10 +302,9 @@ class UserAdminPanel(Component):
             if not accounts and sel:
                 # Get initial account selection from account/user list.
                 accounts = sel
-            attr_sel = dict()
-            for account, states in attr.iteritems():
-                if account in accounts:
-                    attr_sel.update({account: states})
+            attr_sel = dict((account, states)
+                            for account, states in iteritems(attr)
+                            if account in accounts)
 
             if len(accounts) == 1:
                 back_label = _("Back to Account")
@@ -320,9 +314,8 @@ class UserAdminPanel(Component):
                 back_href = req.href.admin('accounts', 'users')
             add_ctxtnav(req, back_label, href=back_href)
             add_stylesheet(req, 'acct_mgr/acctmgr.css')
-            data = dict(_dgettext=dgettext, accounts=accounts, attr=attr_sel)
-            return genshi_template_args(self.env, 'account_db_cleanup.html',
-                                        data)
+            data = dict(i18n_tag=i18n_tag, accounts=accounts, attr=attr_sel)
+            return 'account_db_cleanup.html', data
 
     def _do_acct_details(self, req, username):
         env = self.env
@@ -336,7 +329,7 @@ class UserAdminPanel(Component):
             req.redirect(req.href.admin('accounts', 'users'))
 
         change_uid_enabled = self.uid_changers and True or False
-        data = dict(_dgettext=dgettext,
+        data = dict(i18n_tag=i18n_tag,
                     attr_addonly=bool(req.args.get('attr_addonly')),
                     change_uid_enabled=change_uid_enabled,
                     skip_delete=bool(req.args.get('skip_delete')),
@@ -373,15 +366,13 @@ class UserAdminPanel(Component):
                 success = []
 
                 # Delete a single user account attribute value.
-                if any([k.startswith('delete_email')
-                        for k in req.args.keys()]):
+                if any(k.startswith('delete_email') for k in req.args):
                     del_user_attribute(env, username, attribute='email')
                     add_notice(req, tag_(
                         "Deleted %(attribute)s for %(username)s.",
                         attribute=tag.b(labels.get('email')),
                         username=tag.b(username)))
-                elif any([k.startswith('delete_name')
-                          for k in req.args.keys()]):
+                elif any(k.startswith('delete_name') for k in req.args):
                     del_user_attribute(env, username, attribute='name')
                     add_notice(req, tag_(
                         "Deleted %(attribute)s for %(username)s.",
@@ -433,35 +424,34 @@ class UserAdminPanel(Component):
                 results = None
                 if new_uid:
                     results = self._do_change_uid(req, username, new_uid)
-                if results:
-                    if 'error' in results:
+                if not results:
+                    pass
+                elif 'error' in results:
+                    for key, message in iteritems(results['error']):
                         add_warning(req, _(
                             "Update error in table %(table)s: %(message)s",
-                            table=results['error'].keys()[0][0],
-                            message=results['error'].values()[0]))
-                    else:
-                        result_list = sorted([(k, v) for k, v in
-                                              results.iteritems()])
-                        add_notice(req, tag.ul(
-                            [tag.li(ngettext(
-                                "Table %(table)s column %(column)s"
-                                "%(constraint)s: %(result)s change",
-                                "Table %(table)s column %(column)s"
-                                "%(constraint)s: %(result)s changes",
-                                result[1], table=tag.b(result[0][0]),
-                                column=tag.b(result[0][1]),
-                                constraint=result[0][2] and
-                                           '(' + result[0][2] + ')' or '',
-                                result=tag.b(result[1])))
-                                for result in result_list]
-                        ))
-                        # Switch to display information for new user ID.
-                        username = new_uid
-                        data.update(
-                            dict(url=req.href.admin('accounts', 'users',
-                                                    username),
-                                 user=username)
-                        )
+                            table=key[0], message=message))
+                        break
+                else:
+                    add_notice(req, tag.ul(
+                        [tag.li(ngettext(
+                            "Table %(table)s column %(column)s%(constraint)s: "
+                            "%(result)s change",
+                            "Table %(table)s column %(column)s%(constraint)s: "
+                            "%(result)s changes",
+                            n_changes,
+                            table=tag.b(key[0]),
+                            column=tag.b(key[1]),
+                            constraint='(' + key[2] + ')' if key[2] else '',
+                            result=tag.b(n_changes)))
+                            for key, n_changes in sorted(iteritems(results))]
+                    ))
+                    # Switch to display information for new user ID.
+                    username = new_uid
+                    data.update({
+                        'url': req.href.admin('accounts', 'users', username),
+                        'user': username,
+                    })
 
         # Get account attributes and account status information.
         stores = ExtensionOrder(components=acctmgr.stores,
@@ -476,7 +466,7 @@ class UserAdminPanel(Component):
             self.config.getbool('trac', 'ignore_auth_case')
 
         approval = email = name = None
-        # Fetch data from 'session_attributes'.
+        # Fetch data from 'session_attribute'.
         attributes = get_user_attribute(self.env, username=username,
                                         authenticated=1)
         if username in attributes:
@@ -513,16 +503,17 @@ class UserAdminPanel(Component):
         # Get access history.
         ts_seen = last_seen(env, username)
         if ts_seen and ts_seen[0][1]:
-            data['last_visit'] = format_datetime(ts_seen[0][1], tzinfo=req.tz)
+            data['last_visit'] = datetime.fromtimestamp(ts_seen[0][1], req.tz)
 
         if self.env.is_enabled(AccountGuard):
             attempts = []
             attempts_count = guard.failed_count(username, reset=None)
             if attempts_count > 0:
                 for attempt in guard.get_failed_log(username):
-                    t = format_datetime(to_datetime(
-                        attempt['time']), tzinfo=req.tz)
-                    attempts.append({'ipnr': attempt['ipnr'], 'time': t})
+                    attempt = attempt.copy()
+                    attempt['time'] = datetime.fromtimestamp(attempt['time'],
+                                                             req.tz)
+                    attempts.append(attempt)
                 data['attempts'] = attempts
                 data['pretty_lock_time'] = guard.pretty_lock_time(username,
                                                                   next=True)
@@ -546,7 +537,7 @@ class UserAdminPanel(Component):
         add_ctxtnav(req, _("Back to Accounts"),
                     href=req.href.admin('accounts', 'users'))
         add_stylesheet(req, 'acct_mgr/acctmgr.css')
-        return genshi_template_args(self.env, 'account_admin.html', data)
+        return 'account_admin.html', data
 
     def _do_users(self, req):
         env = self.env
@@ -559,7 +550,7 @@ class UserAdminPanel(Component):
         verify_enabled = (EmailVerificationModule(env).email_enabled and
                           EmailVerificationModule(env).verify_email)
         data = {
-            '_dgettext': dgettext,
+            'i18n_tag': i18n_tag,
             'acctmgr': dict(), 'email_approved': True, 'filters': [],
             'listing_enabled': listing_enabled,
             'create_enabled': acctmgr.supports('set_password'),
@@ -700,7 +691,7 @@ class UserAdminPanel(Component):
                                                             filters)))
         add_stylesheet(req, 'acct_mgr/acctmgr.css')
         add_stylesheet(req, 'common/css/report.css')
-        return genshi_template_args(self.env, 'account_users.html', data)
+        return 'account_users.html', data
 
     def _do_change_uid(self, req, old_uid, new_uid):
         acctmgr = self.acctmgr
@@ -917,7 +908,7 @@ class ConfigurationAdminPanel(Component):
             return tag.pre(text)
 
         data = {
-            '_dgettext': dgettext,
+            'i18n_tag': i18n_tag,
             'pretty_precise_timedelta': pretty_precise_timedelta,
             'safe_wiki_to_html': safe_wiki_to_html,
         }
@@ -1004,8 +995,8 @@ class ConfigurationAdminPanel(Component):
                         cfg.set(a, p, 'SessionStore')
                         cfg.set(c, 'acct_mgr.db.SessionStore', e)
                         cfg.set(c, 'acct_mgr.pwhash.HtDigestHashMethod', e)
-                        from acct_mgr.db import SessionStore
-                        from acct_mgr.pwhash import HtDigestHashMethod
+                        from .db import SessionStore
+                        from .pwhash import HtDigestHashMethod
                         assert env.is_enabled(HtDigestHashMethod)
                         assert env.is_enabled(SessionStore)
                     elif init_store == 'file':
@@ -1013,27 +1004,26 @@ class ConfigurationAdminPanel(Component):
                             cfg.set(a, 'htdigest_file', 'trac.htdigest')
                             cfg.set(a, p, 'HtDigestStore')
                             cfg.set(c, 'acct_mgr.htfile.HtDigestStore', e)
-                            from acct_mgr.htfile import HtDigestStore
+                            from .htfile import HtDigestStore
                             assert env.is_enabled(HtDigestStore)
                         elif init_store_file == 'htpasswd':
                             cfg.set(a, 'htpasswd_file', 'trac.htpasswd')
                             cfg.set(a, 'htpasswd_hash_type', 'md5')
                             cfg.set(a, p, 'HtPasswdStore')
                             cfg.set(c, 'acct_mgr.htfile.HtPasswdStore', e)
-                            from acct_mgr.htfile import HtPasswdStore
+                            from .htfile import HtPasswdStore
                             assert env.is_enabled(HtPasswdStore)
                         elif init_store_file == 'svn_file':
                             cfg.set(a, p, 'SvnServePasswordStore')
                             cfg.set(c,
                                     'acct_mgr.svnserve.SvnServePasswordStore',
                                     e)
-                            from acct_mgr.svnserve import \
-                                SvnServePasswordStore
+                            from .svnserve import SvnServePasswordStore
                             assert env.is_enabled(SvnServePasswordStore)
                     elif init_store == 'http':
                         cfg.set(a, p, 'HttpAuthStore')
                         cfg.set(c, 'acct_mgr.http.HttpAuthStore', e)
-                        from acct_mgr.http import HttpAuthStore
+                        from .http import HttpAuthStore
                         assert env.is_enabled(HttpAuthStore)
                         # ToDo
                         # elif init_store == 'etc':
@@ -1110,7 +1100,7 @@ class ConfigurationAdminPanel(Component):
                     verify_email and 'enabled' or 'disabled')
                 # Refresh object after changes.
                 register_checks = self.config.getlist('account-manager',
-                                                      'register_checks')
+                                                      'register_check')
                 checks = ExtensionOrder(components=self.acctmgr.checks,
                                         list=register_checks)
 
@@ -1458,7 +1448,7 @@ class ConfigurationAdminPanel(Component):
             step=4)
         )
         admin_available = self.perms.get_users_with_permission('TRAC_ADMIN')
-        status = not admin_available and 'error' or 'ok'
+        status = 'ok' if admin_available else 'error'
         details.append(dict(desc=_("Admin user account"), status=status))
         # Require at least one admin account.
         ready = ready and status != 'error'
@@ -1508,8 +1498,7 @@ class ConfigurationAdminPanel(Component):
         add_script(req, 'acct_mgr/js/acctmgr_admin.js')
         add_stylesheet(req, 'acct_mgr/acctmgr.css')
         add_stylesheet(req, 'common/css/report.css')
-        return genshi_template_args(self.env, 'account_config.html',
-                                    data)
+        return 'account_config.html', data
 
     # IAuthenticator methods
 

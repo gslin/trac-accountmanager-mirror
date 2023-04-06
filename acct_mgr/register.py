@@ -13,21 +13,20 @@ import base64
 import os
 import re
 
-from acct_mgr.api import AccountManager
-from acct_mgr.api import IAccountRegistrationInspector
-from acct_mgr.api import _, N_, cleandoc_, dgettext, tag_
-from acct_mgr.model import email_associated, get_user_attribute
-from acct_mgr.model import set_user_attribute
-from acct_mgr.notification import NotificationError
-from acct_mgr.util import contains_any
 from trac import perm
 from trac.config import BoolOption, Option
 from trac.core import Component, TracError, implements
 from trac.util.html import html as tag
 from trac.util.text import exception_to_unicode
-from trac.web import auth, chrome
-from trac.web.api import HTTPBadRequest
+from trac.web import HTTPBadRequest, auth, chrome
 from trac.web.main import IRequestFilter, IRequestHandler
+
+from .api import (AccountManager, IAccountRegistrationInspector, _, N_,
+                  cleandoc_, tag_)
+from .compat import process_request_compat
+from .model import email_associated, get_user_attribute, set_user_attribute
+from .notification import NotificationError
+from .util import contains_any, i18n_tag
 
 
 class RegistrationError(TracError):
@@ -135,12 +134,12 @@ class BotTrapCheck(Component):
 
     reg_basic_question = Option(
         'account-manager', 'register_basic_question', '',
-        doc="A question to ask instead of the standard prompt, to which "
-            "the value of register_basic_token is the answer. Setting to "
-            "empty string (default value) keeps the standard prompt.")
+        doc=N_("A question to ask instead of the standard prompt, to which "
+               "the value of register_basic_token is the answer. Setting to "
+               "empty string (default value) keeps the standard prompt."))
     reg_basic_token = Option(
         'account-manager', 'register_basic_token', '',
-        doc="A string required as input to pass verification.")
+        doc=N_("A string required as input to pass verification."))
 
     def render_registration_fields(self, req, data):
         """Add a hidden text input field to the registration form, and
@@ -209,7 +208,7 @@ class EmailCheck(Component):
                            tag.input(type='text', name='email', size=20,
                                      class_='textwidget', value=old_value))
         # Deferred import required to avoid circular import dependencies.
-        from acct_mgr.web_ui import AccountModule
+        from .web_ui import AccountModule
         reset_password = AccountModule(self.env).reset_password_enabled
         verify_account = self.env.is_enabled(EmailVerificationModule) and \
                          EmailVerificationModule(self.env).verify_email
@@ -265,18 +264,17 @@ class RegExpCheck(Component):
     """)
 
     username_regexp = Option('account-manager', 'username_regexp',
-                             r'(?i)^[A-Z0-9.\-_]{5,}$', doc="""
-        A validation regular expression describing new usernames. Define
-        constraints for allowed user names corresponding to local naming
-        policy.
-        """)
+                             r'(?i)^[A-Z0-9.\-_]{5,}$',
+        doc=N_("A validation regular expression describing new usernames. "
+               "Define constraints for allowed user names corresponding to "
+               "local naming policy."))
 
     email_regexp = Option('account-manager', 'email_regexp',
         r'(?i)^[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+[A-Z0-9-]{2,63}$',
-        doc="""A validation regular expression describing new account emails.
-        Define constraints for a valid email address. A custom pattern can
-        narrow or widen scope i.e. to accept UTF-8 characters.
-        """)
+        doc=N_("A validation regular expression describing new account "
+               "emails. Define constraints for a valid email address. A "
+               "custom pattern can narrow or widen scope i.e. to accept UTF-8 "
+               "characters."))
 
     def render_registration_fields(self, req, data):
         return None, None
@@ -397,6 +395,7 @@ class RegistrationModule(Component):
     def match_request(self, req):
         return req.path_info == '/register' and self._enable_check(log=True)
 
+    @process_request_compat
     def process_request(self, req):
         acctmgr = self.acctmgr
         if req.authname != 'anonymous':
@@ -404,14 +403,14 @@ class RegistrationModule(Component):
         action = req.args.get('action')
         name = req.args.get('name', '')
         if isinstance(name, list):
-            raise HTTPBadRequest(_("Invalid request arguments."))
+            raise HTTPBadRequest("Invalid request arguments")
         name = name.strip()
         username = req.args.get('username', '')
         if isinstance(username, list):
-            raise HTTPBadRequest(_("Invalid request arguments."))
+            raise HTTPBadRequest("Invalid request arguments")
         username = acctmgr.handle_username_casing(username.strip())
         data = {
-            '_dgettext': dgettext,
+            'i18n_tag': i18n_tag,
             'acctmgr': {'name': name, 'username': username},
             'ignore_auth_case': self.config.getbool('trac',
                                                     'ignore_auth_case')
@@ -425,9 +424,9 @@ class RegistrationModule(Component):
                     # Check request and prime account on success.
                     acctmgr.validate_account(req, True)
                 except NotificationError as e:
-                    chrome.add_warning(req, _(
-                        "Error raised while sending a change notification."
-                    ) + _("You should report that issue to a Trac admin."))
+                    chrome.add_warning(req, '%s %s' % (
+                        _("Error raised while sending a change notification."),
+                        _("You should report that issue to a Trac admin.")))
                     self.log.error(
                         'Unable to send registration notification: %s',
                         exception_to_unicode(e, traceback=True))
@@ -460,7 +459,7 @@ class RegistrationModule(Component):
                         "Your username has been successfully registered but "
                         "your account still requires activation. Please "
                         "login as user %(user)s, and follow the "
-                        "instructions.", user=tag.b(username)))
+                        "instructions.", user=tag.strong(username)))
                     req.redirect(req.href.login())
                 chrome.add_notice(req, tag_(
                     "Registration has been finished successfully. "
@@ -480,22 +479,18 @@ class RegistrationModule(Component):
                 fragment = None
             if fragment:
                 try:
-                    # Python<2.5: Can't have 'except' and 'finally' in same
-                    #   'try' statement together.
-                    try:
-                        if 'optional' in fragment.keys():
-                            fragments['optional'].append(fragment['optional'])
-                    except AttributeError:
-                        # No dict, just append Genshi Fragment or str/unicode.
-                        fragments['required'].append(fragment)
-                    else:
-                        fragments['required'].append(fragment.get('required',
-                                                                  ''))
+                    if 'optional' in fragment.keys():
+                        fragments['optional'].append(fragment['optional'])
+                except AttributeError:
+                    # No dict, just append Genshi Fragment or str/unicode.
+                    fragments['required'].append(fragment)
+                else:
+                    fragments['required'].append(fragment.get('required', ''))
                 finally:
                     data.update(f_data)
         data['required_fields'] = fragments['required']
         data['optional_fields'] = fragments['optional']
-        return 'account_register.html', data, None
+        return 'account_register.html', data
 
 
 class EmailVerificationModule(Component):
@@ -554,13 +549,12 @@ class EmailVerificationModule(Component):
         if self.verify_email and handler is not self and \
                 'email_verification_token' in req.session and \
                 'ACCTMGR_ADMIN' not in req.perm:
-            # TRANSLATOR: Your permissions have been limited until you ...
-            link = tag.a(_("verify your email address"),
-                         href=req.href.verify_email())
-            # TRANSLATOR: ... verify your email address
-            chrome.add_warning(req,
-                               tag_("Your permissions have been limited "
-                                    "until you %(link)s.", link=link))
+            message = i18n_tag(
+                _("Your permissions have been limited until you [1:verify "
+                "your email address]."),
+                tag.a(href=req.href('verify_email')),
+            )
+            chrome.add_warning(req, message)
             req.perm = perm.PermissionCache(self.env, 'anonymous')
         return handler
 
@@ -589,14 +583,11 @@ class EmailVerificationModule(Component):
                 self.log.error('Unable to send registration notification: %s',
                                exception_to_unicode(e, traceback=True))
             else:
-                # TRANSLATOR: An email has been sent to <%(email)s>
-                # with a token to ... (the link label for following message)
-                link = tag.a(_("verify your new email address"),
-                             href=req.href.verify_email())
-                # TRANSLATOR: ... verify your new email address
-                chrome.add_notice(req, tag_(
-                    "An email has been sent to <%(email)s> with a token to "
-                    "%(link)s.", email=tag(email), link=link))
+                message = i18n_tag(_("An email has been sent to <%(email)s> "
+                                     "with a token to [1:verify your new "
+                                     "email address].", email=email),
+                                   tag.a(href=req.href('verify_email')))
+                chrome.add_notice(req, message)
         return template, data, content_type
 
     # IRequestHandler methods
@@ -604,6 +595,7 @@ class EmailVerificationModule(Component):
     def match_request(self, req):
         return req.path_info == '/verify_email'
 
+    @process_request_compat
     def process_request(self, req):
         if not req.session.authenticated:
             chrome.add_warning(req, tag_(
@@ -627,8 +619,8 @@ class EmailVerificationModule(Component):
                                exception_to_unicode(e, traceback=True))
             else:
                 chrome.add_notice(req, _("A notification email has been "
-                                         "resent to <%s>."),
-                                  req.session.get('email'))
+                                         "resent to <%(email)s>.",
+                                         email=req.session.get('email')))
         elif 'verify' in req.args:
             # allow via POST or GET (the latter for email links)
             if req.args['token'] == req.session['email_verification_token']:
@@ -638,12 +630,11 @@ class EmailVerificationModule(Component):
                 req.redirect(req.href.prefs())
             else:
                 chrome.add_warning(req, _("Invalid verification token"))
-        data = {'_dgettext': dgettext}
+        data = {'i18n_tag': i18n_tag}
         if 'token' in req.args:
             data['token'] = req.args['token']
-        if 'email_verification_token' not in req.session:
-            data['button_state'] = {'disabled': 'disabled'}
-        return 'account_verify_email.html', data, None
+        data['button_disabled'] = 'email_verification_token' not in req.session
+        return 'account_verify_email.html', data
 
     def _gen_token(self):
         return base64.urlsafe_b64encode(os.urandom(6))

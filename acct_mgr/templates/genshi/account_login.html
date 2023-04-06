@@ -7,9 +7,6 @@
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       i18n:domain="acct_mgr">
   <xi:include href="layout.html" />
-  <?python
-    if _dgettext is not None:
-        dgettext = _dgettext ?>
   <head>
     <title>Login</title>
     <script type="text/javascript">
@@ -39,37 +36,31 @@
           <input type="password" id="password" name="password"
                  class="textwidget" size="20" />
         </div>
-        <div id="login_options" class="central"
-             py:if="reset_password_enabled and login_opt_list != True">
-          <p class="hint">
-            <a href="${href.reset_password()}">Forgot your password?</a>
-          </p>
-        </div>
-        <div class="textbox" py:if="persistent_sessions">
-          <input type="checkbox" id="rememberme" name="rememberme"
-                 value="1" />
-          <label for="rememberme">Remember me</label>
-        </div>
-        <div id="login_options" class="buttons central nav">
-          <input type="submit" value="${dgettext('acct_mgr', 'Login')}" />
-          <ul py:if="login_opt_list is True">
-            <py:choose py:if="registration_enabled">
-              <li class="first" py:when="reset_password_enabled">
+        <div id="login_options" class="central">
+          <div py:if="reset_password_enabled and not login_opt_list">
+            <p class="hint">
+              <a href="${href.reset_password()}">Forgot your password?</a>
+            </p>
+          </div>
+          <div class="textbox" py:if="persistent_sessions">
+            <input type="checkbox" id="rememberme" name="rememberme" value="1" />
+            <label for="rememberme">Remember me</label>
+          </div>
+          <div class="buttons">
+            <input type="submit" value="${dgettext('acct_mgr', 'Login')}" />
+          </div>
+          <div class="nav" py:if="login_opt_list">
+            <ul>
+              <li py:if="registration_enabled"
+                  class="${classes(first=True, last=not reset_password_enabled)}">
                 <a href="${href.register()}">Register</a>
               </li>
-              <li class="first last" py:otherwise="">
-                <a href="${href.register()}">Register</a>
-              </li>
-            </py:choose>
-            <py:choose py:if="reset_password_enabled">
-              <li class="last" py:when="registration_enabled">
+              <li py:if="reset_password_enabled"
+                  class="${classes(first=not registration_enabled, last=True)}">
                 <a href="${href.reset_password()}">Forgot your password?</a>
               </li>
-              <li class="first last" py:otherwise="">
-                <a href="${href.reset_password()}">Forgot your password?</a>
-              </li>
-            </py:choose>
-          </ul>
+            </ul>
+          </div>
         </div>
       </form>
 

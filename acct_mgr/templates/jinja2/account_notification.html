@@ -1,0 +1,69 @@
+#extends 'admin.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block admintitle
+      ${dgettext('acct_mgr', 'Accounts: Notification Configuration')}
+      # endblock admintitle
+    </title>
+  </head>
+
+  <body>
+    # block adminpanel
+    <h2>${dgettext('acct_mgr', 'Accounts: Notification Configuration')}</h2>
+
+    <form id="accountsconfig" class="mod" method="post">
+      ${jmacros.form_token_input()}
+
+      <fieldset>
+        <legend>${dgettext('acct_mgr', 'Account Notification')}</legend>
+        <p>${
+          dgettext("acct_mgr",
+                   "Set the following options in order to be notified of "
+                   "account creation, password reset and account deletion.")
+        }</p>
+
+        <h3>${dgettext("acct_mgr", "Notification Actions")}</h3>
+        <p class="help">${
+          i18n_tag(
+            dgettext(
+              "acct_mgr",
+              "This is a list of actions which you can enable or disable by "
+              "[1:checking] the [2:checkboxes]."),
+            'em', 'em')
+        }</p>
+        <label>
+          <input type="checkbox" name="notify_actions" value="new"
+                 ${{'checked': 'new' in notify_actions}|htmlattr} />
+          ${dgettext('acct_mgr', 'Get notified of new account creation')}
+        </label>
+        <br/>
+        <label>
+          <input type="checkbox" name="notify_actions" value="change"
+                 ${{'checked': 'change' in notify_actions}|htmlattr} />
+          ${dgettext('acct_mgr', 'Get notified of password reset')}
+        </label>
+        <br/>
+        <label>
+          <input type="checkbox" name="notify_actions" value="delete"
+                 ${{'checked': 'delete' in notify_actions}|htmlattr} />
+          ${dgettext('acct_mgr', 'Get notified of account deletion')}
+        </label>
+
+        <h3>${dgettext('acct_mgr', 'Notification Recipient Addresses')}</h3>
+        <p class="help">${
+          dgettext("acct_mgr",
+                   "Space-separated list of email addresses and/or usernames "
+                   "that get notified of the above actions:")
+        }</p>
+        <textarea class="trac-fullwidth" name="notify_addresses"
+                  cols="60" rows="2">${notify_addresses|join(' ')}</textarea>
+      </fieldset>
+      <div class="buttons">
+        <input type="submit" name="save" value="${dgettext('acct_mgr', 'Apply changes')}" />
+      </div>
+    </form>
+    # endblock adminpanel
+  </body>
+</html>

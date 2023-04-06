@@ -1,0 +1,63 @@
+# extends 'prefs.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block preftitle
+      ${dgettext('acct_mgr', "Account")}
+      # endblock preftitle
+    </title>
+    # block head
+    ${ super() }
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $('#old_password').focus();
+      });
+    </script>
+    # endblock head
+  </head>
+
+  <body>
+    # block prefpanel
+    <h2>${dgettext('acct_mgr', 'Change Password')}</h2>
+    <table>
+      <tr class="field">
+        <th><label for="old_password">${dgettext('acct_mgr', 'Old Password:')}</label></th>
+        <td><input type="password" id="old_password" name="old_password" class="textwidget" size="20" /></td>
+      </tr>
+      <tr class="field">
+        <th><label for="password">${dgettext('acct_mgr', 'New Password:')}</label></th>
+        <td><input type="password" name="password" class="textwidget" size="20" /></td>
+      </tr>
+      <tr class="field">
+        <th><label for="password_confirm">${dgettext('acct_mgr', 'Confirm Password:')}</label></th>
+        <td><input type="password" name="password_confirm" class="textwidget" size="20" /></td>
+      </tr>
+    </table>
+    # endblock prefpanel
+
+    # block content
+    ${ super() }
+
+    # if delete_enabled
+    <hr />
+
+    <h2>${dgettext('acct_mgr', 'Delete Account')}</h2>
+    <form method="post" action="" id="acctmgr_delete_account"
+          onsubmit="return confirm('${delete_msg_confirm}');">
+      ${jmacros.form_token_input()}
+      <div class="field">
+        <label>
+          ${dgettext('acct_mgr', 'Password:')}
+          <input type="password" name="password" class="textwidget" size="20" />
+        </label>
+      </div>
+      <div class="buttons">
+        <input type="hidden" name="action" value="delete" />
+        <input type="submit" value="${dgettext('acct_mgr', 'Delete account')}" />
+      </div>
+    </form>
+    # endif
+    # endblock content
+  </body>
+</html>

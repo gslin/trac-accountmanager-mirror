@@ -9,19 +9,20 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
-from trac.config import ExtensionOption
 from trac.core import Component, implements
+from trac.config import ExtensionOption
 
-from acct_mgr.api import IPasswordStore
-from acct_mgr.pwhash import IPasswordHashMethod
+from .api import IPasswordStore, N_
+from .pwhash import IPasswordHashMethod
 
 
 class SessionStore(Component):
+
     implements(IPasswordStore)
 
     hash_method = ExtensionOption('account-manager', 'hash_method',
         IPasswordHashMethod, 'HtDigestHashMethod',
-        doc="IPasswordHashMethod used to create new/updated passwords")
+        doc=N_("IPasswordHashMethod used to create new/updated passwords"))
 
     def __init__(self):
         self.key = 'password'

@@ -1,0 +1,92 @@
+# extends 'layout.html'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      # block title
+      ${dgettext('acct_mgr', "Register")}
+      # endblock title
+    </title>
+
+    # block head
+    ${ super() }
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $('#username').focus();
+      });
+    </script>
+    # endblock head
+  </head>
+
+  <body>
+    # block content
+    <div id="content" class="register">
+      <h1>${dgettext('acct_mgr', 'Register an account')}</h1>
+
+      # if registration_error
+      <div class="system-message">
+        <h2>${dgettext('acct_mgr', 'Error')}</h2>
+        <p>${registration_error}</p>
+      </div>
+      # endif
+
+      <form method="post" id="acctmgr_registerform" action="">
+        ${jmacros.form_token_input()}
+        <fieldset>
+          <legend>${dgettext('acct_mgr', 'Required')}</legend>
+          <div>
+            <input type="hidden" name="action" value="create" />
+            <label>
+              ${dgettext('acct_mgr', 'Username:')}
+              <input type="text" id="username" name="username" class="textwidget"
+                     size="20" value="${acctmgr.username}" />
+            </label>
+            # if ignore_auth_case
+            <p class="hint">
+            ${dgettext('acct_mgr', 'Only lowercase usernames allowed')}
+            </p>
+            # endif
+          </div>
+          <div>
+            <label>
+              ${dgettext('acct_mgr', 'Password:')}
+              <input type="password" name="password" class="textwidget" size="20" />
+            </label>
+          </div>
+          <div>
+            <label>
+              ${dgettext('acct_mgr', 'Confirm Password:')}
+              <input type="password" name="password_confirm" class="textwidget" size="20" />
+            </label>
+          </div>
+          # for field in required_fields
+          <div>
+            ## Additional required fields can be included below
+            ${field}
+          </div>
+          # endfor
+        </fieldset>
+
+        <fieldset>
+          <legend>${dgettext('acct_mgr', 'Optional')}</legend>
+          <div>
+            <label>
+              ${dgettext('acct_mgr', 'Name:')}
+              <input type="text" name="name" class="textwidget" size="20" value="${acctmgr.name}"/>
+            </label>
+          </div>
+          # for field in optional_fields
+          <div>
+            ## Additional optional fields can be included below
+            ${field}
+          </div>
+          # endfor
+        </fieldset>
+        <div class="buttons">
+          <input type="submit" value="${dgettext('acct_mgr', 'Create account')}" />
+        </div>
+      </form>
+    </div>
+    # endblock content
+  </body>
+</html>

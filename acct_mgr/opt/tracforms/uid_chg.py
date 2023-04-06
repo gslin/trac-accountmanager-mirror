@@ -10,8 +10,8 @@
 
 from tracforms.tracdb import DBComponent
 
-from acct_mgr.api import _
-from acct_mgr.model import PrimitiveUserIdChanger
+from ...api import _
+from ...model import PrimitiveUserIdChanger
 
 
 class TracFormsUserIdChanger(PrimitiveUserIdChanger):

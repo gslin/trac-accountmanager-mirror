@@ -40,7 +40,7 @@ class NonForgetingSMTPServerStore(object):
     def message(self):
         return self.last_message.get('message')
 
-    def process_message(self, peer, mailfrom, rcpttos, data):
+    def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
         message = {'recipients': rcpttos, 'sender': mailfrom, 'message': data}
         self.messages.update((recipient, message) for recipient in rcpttos)
         self.last_message = message
@@ -58,8 +58,8 @@ class SMTPServer(smtpd.SMTPServer):
         smtpd.SMTPServer.__init__(self, localaddr, None)
         self.store = store
 
-    def process_message(self, peer, mailfrom, rcpttos, data):
-        self.store.process_message(peer, mailfrom, rcpttos, data)
+    def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
+        self.store.process_message(peer, mailfrom, rcpttos, data, **kwargs)
 
 
 class SMTPThreadedServer(threading.Thread):

@@ -1,0 +1,66 @@
+<!--!
+Table style account/user list.
+
+Arguments:
+ - accounts:
+ - delete_enabled:
+ - cls:
+ - cols:
+-->
+<div xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:xi="http://www.w3.org/2001/XInclude"
+     xmlns:py="http://genshi.edgewall.org/"
+     xmlns:i18n="http://genshi.edgewall.org/i18n"
+     i18n:domain="acct_mgr"
+     id="accountlist">
+  <table class="$cls" id="accountlist">
+    <thead>
+      <tr>
+        <th class="sel" py:if="delete_enabled">&nbsp;</th>
+        <th>Account</th>
+        <th py:if="'name' in cols">Name</th>
+        <th py:if="'email' in cols">Email</th>
+        <th>Last Login</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr py:for="idx, acct in enumerate(accounts)"
+          py:with="
+            title = None
+                    if not acct.approval else
+                    dgettext('acct_mgr', 'Email not verified')
+                    if 'email' in acct.approval else
+                    dgettext('acct_mgr', 'Approval pending')
+                    if acct.approval[0] == 'pending' else
+                    dgettext('acct_mgr', 'Approval revoked')
+                    if acct.approval[0] == 'revoked' else
+                    None;
+          "
+          class="${classes('odd' if idx % 2 else 'even', missing=acct.approval)}"
+          title="${title}">
+        <td class="sel" py:if="delete_enabled">
+          <input type="checkbox" name="sel" value="${acct.username}" />
+        </td>
+        <td>
+          <a href="${acct.url}">${acct.username}</a>
+          <!--! Additional account status icons -->
+          <py:choose py:if="acct.locked">
+            <img src="${href.chrome('/acct_mgr/time-locked.png')}"
+                 py:when="acct.release_hint" alt="Account locked"
+                 title="${acct.release_hint}" />
+            <img src="${href.chrome('/acct_mgr/locked.png')}"
+                 py:otherwise="" alt="Permanently locked"
+                 title="${dgettext('acct_mgr', 'Permanently locked')}" />
+          </py:choose>
+        </td>
+        <td py:if="'name' in cols">${acct.name}</td>
+        <td py:if="'email' in cols">
+          <a href="mailto:$acct.email" title="Send email"
+             py:strip="not acct.email or acct.email.endswith('…')"
+             >${acct.email}</a>
+        </td>
+        <td>${pretty_dateinfo(acct.last_visit) if acct.last_visit else ''}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

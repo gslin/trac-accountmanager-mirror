@@ -19,14 +19,13 @@ from trac.test import EnvironmentStub, MockRequest
 from trac.web.api import RequestDone
 from trac.web.session import Session
 
-from acct_mgr.api import AccountManager
-from acct_mgr.db import SessionStore
-from acct_mgr.model import set_user_attribute
-from acct_mgr.register import BasicCheck, BotTrapCheck, EmailCheck
-from acct_mgr.register import EmailVerificationModule
-from acct_mgr.register import RegExpCheck
-from acct_mgr.register import RegistrationError, RegistrationModule
-from acct_mgr.register import UsernamePermCheck
+from ..api import AccountManager
+from ..compat import unicode
+from ..db import SessionStore
+from ..model import set_user_attribute
+from ..register import (
+    BasicCheck, BotTrapCheck, EmailCheck, EmailVerificationModule, RegExpCheck,
+    RegistrationError, RegistrationModule, UsernamePermCheck)
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -114,7 +113,7 @@ class BotTrapCheckTestCase(_BaseTestCase):
         # 1st attempt: Wrong input.
         self.assertRaises(RegistrationError, check.validate_registration, req)
         # Ensure, that old input is restored on failure.
-        self.assertTrue(wrong_input in Markup(field_res[0]))
+        self.assertIn(wrong_input, Markup(field_res[0]))
         # Ensure, that template data dict is passed unchanged.
         self.assertEqual(field_res[1], data)
 
@@ -172,7 +171,7 @@ class EmailCheckTestCase(_BaseTestCase):
         self.assertEqual(len(field_res), 2)
         self.assertTrue(Markup(field_res[0]).startswith('<label>Email:'))
         # Ensure, that old input is restored on failure.
-        self.assertTrue(old_email_input in Markup(field_res[0]))
+        self.assertIn(old_email_input, Markup(field_res[0]))
         # Ensure, that template data dict is passed unchanged.
         self.assertEqual(field_res[1], acct)
         req.args.update(dict(email=''))
@@ -304,7 +303,7 @@ class RegistrationModuleTestCase(_BaseTestCase):
         })
         # Fail to register the user.
         self.rmod.process_request(req)
-        self.assertTrue('email address' in str(req.chrome['warnings']))
+        self.assertIn('email address', unicode(req.chrome['warnings']))
         self.assertEqual(list(self.store.get_users()), [])
 
     def test_optional_email_registration(self):
@@ -354,20 +353,20 @@ class EmailVerificationModuleTestCase(_BaseTestCase):
         self.assertRaises(RequestDone, self.vmod.pre_process_request,
                           self.req, None)
         warnings = self.req.chrome.get('warnings')
-        self.assertTrue(string.find(str(warnings and warnings[0] or ''),
-                                    'already in use') > 0)
+        self.assertIn('already in use',
+                      unicode(warnings and warnings[0] or ''))
 
     def test_check_no_email(self):
         self.assertRaises(RequestDone, self.vmod.pre_process_request,
                           self.req, None)
         warnings = self.req.chrome.get('warnings')
-        self.assertNotEqual(str(warnings and warnings[0] or ''), '')
+        self.assertNotEqual(unicode(warnings and warnings[0] or ''), '')
 
     def test_check(self):
         self.req.args['email'] = 'user@foo.bar'
         self.vmod.pre_process_request(self.req, None)
         warnings = self.req.chrome.get('warnings')
-        self.assertEqual(str(warnings and warnings[0] or ''), '')
+        self.assertEqual(unicode(warnings and warnings[0] or ''), '')
 
 
 def test_suite():

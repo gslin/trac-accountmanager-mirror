@@ -8,5 +8,5 @@ include README*
 include acct_mgr/htdocs/*
 include acct_mgr/locale/messages.pot
 include acct_mgr/locale/*/LC_MESSAGES/acct_mgr.po
-include acct_mgr/templates/*.html
-include acct_mgr/templates/*.txt
+include acct_mgr/templates/*/*.html
+include acct_mgr/templates/*/*.txt

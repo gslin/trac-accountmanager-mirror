@@ -1,0 +1,81 @@
+{#
+Table style account/user list.
+
+Arguments:
+ - accounts:
+ - delete_enabled:
+ - cls:
+ - cols:
+#}
+<div id="accountlist">
+  <table class="${cls}" id="accountlist">
+    <thead>
+      <tr>
+        # if delete_enabled
+        <th class="sel">&nbsp;</th>
+        # endif
+        <th>${dgettext('acct_mgr', 'Account')}</th>
+        # if 'name' in cols
+        <th>${dgettext('acct_mgr', 'Name')}</th>
+        # endif
+        # if 'email' in cols
+        <th>${dgettext('acct_mgr', 'Email')}</th>
+        # endif
+        <th>${dgettext('acct_mgr', 'Last Login')}</th>
+      </tr>
+    </thead>
+    <tbody>
+      # for account in accounts
+      #   if not account.approval
+      #     set title = None
+      #   elif 'email' in account.approval
+      #     set title = dgettext('acct_mgr', 'Email not verified')
+      #   elif account.approval[0] == 'pending'
+      #     set title = dgettext('acct_mgr', 'Approval pending')
+      #   elif account.approval[0] == 'revoked'
+      #     set title = dgettext('acct_mgr', 'Approval revoked')
+      #   else
+      #     set title = None
+      #   endif
+      <tr${{'class': classes(loop.cycle('odd', 'even'), missing=account.approval),
+            'title': title,
+           }|htmlattr}>
+        # if delete_enabled
+        <td class="sel">
+          <input type="checkbox" name="sel" value="${account.username}" />
+        </td>
+        # endif
+        <td>
+          <a href="${account.url}">${account.username}</a>
+          ## Additional account status icons
+          # if account.locked
+          #   if account.release_hint
+          <img src="${href.chrome('/acct_mgr/time-locked.png')}"
+               alt="${dgettext('acct_mgr', 'Account locked')}" title="${account.release_hint}" />
+          #   else
+          <img src="${href.chrome('/acct_mgr/locked.png')}"
+               alt="${dgettext('acct_mgr', 'Permanently locked')}"
+               title="${dgettext('acct_mgr', 'Permanently locked')}" />
+          #   endif
+          # endif
+        </td>
+        # if 'name' in cols
+        <td>${account.name}</td>
+        # endif
+        # if 'email' in cols
+        <td>
+          # if not account.email or account.email.endswith('…')
+          ${account.email}
+          # else
+          <a href="mailto:${account.email}" title="${dgettext('acct_mgr', 'Send email')}">
+            ${account.email}
+          </a>
+          # endif
+        </td>
+        # endif
+        <td>${pretty_dateinfo(account.last_visit) if account.last_visit}</td>
+      </tr>
+      # endfor
+    </tbody>
+  </table>
+</div>

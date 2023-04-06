@@ -17,8 +17,8 @@ from trac.perm import PermissionCache, PermissionSystem
 from trac.test import EnvironmentStub, MockRequest
 from trac.web.session import Session
 
-from acct_mgr.api import AccountManager
-from acct_mgr.db import SessionStore
+from ..api import AccountManager
+from ..db import SessionStore
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -163,7 +163,7 @@ class PermissionTestCase(_BaseTestCase):
 
     def test_available_actions(self):
         for action in self.actions:
-            self.failIf(action not in self.perm.get_actions())
+            self.assertFalse(action not in self.perm.get_actions())
 
     def test_available_actions_no_perms(self):
         for action in self.actions:

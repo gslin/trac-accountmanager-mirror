@@ -7,9 +7,6 @@
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       i18n:domain="acct_mgr">
   <xi:include href="admin.html" />
-  <?python
-    if _dgettext is not None:
-        dgettext = _dgettext ?>
   <head>
     <title>Accounts</title>
     <script type="text/javascript"
@@ -155,14 +152,14 @@
       </div>
 
       <!--! TRANSLATOR: Position (# to # of #) or total, if not paginating -->
-      <h2 class="report-result">
+      <h2 class="report-result" i18n:msg="count">
         Accounts <span class="trac-count">($displayed_items)</span>
       </h2>
 
       <form id="filter" method="get" action="">
         <fieldset id="filters">
           <legend class="foldable">Filters</legend>
-          <table summary="Account filters">
+          <table summary="Filters">
             <th scope="row">Status</th>
             <td class="filter">
               <label class="control" py:for="filter in filters">
@@ -172,8 +169,7 @@
             </td>
             <td>
               <div class="inlinebuttons">
-                <input type="submit" name="update"
-                       value="${dgettext('acct_mgr', 'Update')}" />
+                <input type="submit" name="update" value="${dgettext('acct_mgr', 'Update')}" />
               </div>
             </td>
           </table>
@@ -187,25 +183,22 @@
         <xi:include py:with="paginator = accounts" href="page_index.html" />
 
         <div class="buttons">
-          <input type="submit" id="reset" name="reset"
-                 py:if="password_reset_enabled"
+          <input py:if="password_reset_enabled"
+                 type="submit" id="reset" name="reset"
                  title="Send another random password"
                  value="${dgettext('acct_mgr', 'Reset passwords')}" />
           <input type="submit" id="approve" name="approve"
                  title="Approve pending registrations, ban/unban accounts"
                  value="${dgettext('acct_mgr', 'Toggle account approval')}" />
-          <input type="submit" id="remove" name="remove"
-                 py:if="delete_enabled"
+          <input py:if="delete_enabled"
+                 type="submit" id="remove" name="remove"
                  title="Delete accounts"
-                 value="${dgettext('acct_mgr',
-                                   'Remove selected items')}" />
-          <input type="submit" id="cleanup" name="cleanup"
-                 py:if="'ACCTMGR_ADMIN' in req.perm"
-                 value="${dgettext('acct_mgr',
-                                   'Review account attributes')}" />
+                 value="${dgettext('acct_mgr', 'Remove selected items')}" />
+          <input py:if="'ACCTMGR_ADMIN' in req.perm"
+                 type="submit" id="cleanup" name="cleanup"
+                 value="${dgettext('acct_mgr', 'Review account attributes')}" />
         </div>
       </form>
     </div>
-
   </body>
 </html>

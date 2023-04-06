@@ -8,18 +8,15 @@
 #
 # Author: Steffen Hoffmann <hoff.st@web.de>
 
-import new
-import pkg_resources
 import shutil
 import tempfile
 import time
 import unittest
 
-from trac import __version__ as VERSION
 from trac.test import EnvironmentStub, MockRequest
 from trac.web.session import Session
 
-from acct_mgr.model import (
+from ..model import (
     change_uid, del_user_attribute, delete_user, get_user_attribute,
     last_seen, prime_auth_session, set_user_attribute, user_known)
 
@@ -86,8 +83,7 @@ class ModelTestCase(unittest.TestCase):
 
         no_constraints = get_user_attribute(self.env, authenticated=None)
         # Distinct session IDs form top-level keys.
-        self.assertEqual(set(no_constraints.keys()),
-                         set([u'user', u'another']))
+        self.assertEqual(set(no_constraints), set([u'user', u'another']))
         # There are probably anonymous sessions named equally to
         # authenticated ones, causing different nested dicts below each
         # session ID.  Btw, only authenticated ones are real usernames.
@@ -132,11 +128,6 @@ class KnownUsersCacheUpdateTestCase(unittest.TestCase):
 
     def setUp(self):
         self.env = EnvironmentStub(default_data=True)
-        if pkg_resources.parse_version(VERSION) < \
-                pkg_resources.parse_version('1.2'):
-            from trac.env import Environment
-            self.env.get_known_users = \
-                new.instancemethod(Environment.get_known_users, self.env, None)
 
     def tearDown(self):
         self.env.shutdown()

@@ -17,7 +17,7 @@ from trac.test import EnvironmentStub, MockRequest
 from trac.util.datefmt import to_datetime, to_timestamp
 from trac.web.session import Session
 
-from acct_mgr.guard import AccountGuard
+from ..guard import AccountGuard
 
 
 class AccountGuardTestCase(unittest.TestCase):

@@ -9,6 +9,7 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
+import io
 import os.path
 import shutil
 import tempfile
@@ -16,7 +17,7 @@ import unittest
 
 from trac.test import EnvironmentStub
 
-from acct_mgr.htfile import HtDigestStore, HtPasswdStore
+from ..htfile import HtDigestStore, HtPasswdStore
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -36,11 +37,12 @@ class _BaseTestCase(unittest.TestCase):
         dirname = os.path.dirname(filename)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        fd = file(filename, 'w')
         content = kw.get('content')
-        if content is not None:
-            fd.write(content)
-        fd.close()
+        with io.open(filename, 'w', encoding='utf-8') as fd:
+            if content is not None:
+                if isinstance(content, bytes):
+                    content = content.decode('utf-8')
+                fd.write(content)
         return filename
 
     def _init_password_file(self, flavor, filename, content=''):
