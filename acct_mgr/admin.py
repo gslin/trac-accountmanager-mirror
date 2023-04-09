@@ -36,7 +36,7 @@ from .model import (change_uid, del_user_attribute, email_verification_token,
                     set_user_attribute)
 from .notification import NotificationError
 from .register import EmailVerificationModule, RegistrationError
-from .util import i18n_tag, pretty_precise_timedelta
+from .util import i18n_tag, format_timespan
 from .web_ui import AccountModule
 
 
@@ -909,7 +909,7 @@ class ConfigurationAdminPanel(Component):
 
         data = {
             'i18n_tag': i18n_tag,
-            'pretty_precise_timedelta': pretty_precise_timedelta,
+            'format_timespan': format_timespan,
             'safe_wiki_to_html': safe_wiki_to_html,
         }
 

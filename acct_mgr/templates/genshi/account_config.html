@@ -135,7 +135,7 @@
                            'value': auth_cookie_lifetime}),
                 ('span', {'class': 'hint',
                           'style': None if lifetime_value else 'display:none'}),
-                timedelta=pretty_precise_timedelta(None, diff=lifetime_value),
+                timedelta=format_timespan(lifetime_value),
               )
             }</label>
             <p class="hint">${
@@ -861,8 +861,7 @@
                                    'value': user_lock_max_time}),
                         ('span', {'class': 'hint',
                                   'style': None if user_lock_max_time else 'display:none'}),
-                        time=pretty_precise_timedelta(None, diff=user_lock_max_time)
-                             if user_lock_max_time else '', \
+                        time=format_timespan(user_lock_max_time) if user_lock_max_time else '', \
                       )
                     }</label>
                     <p class="hint">

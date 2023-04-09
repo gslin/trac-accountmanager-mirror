@@ -14,39 +14,26 @@ from datetime import datetime
 from trac.util.html import Fragment, tag
 
 from ..compat import unicode
-from ..util import i18n_tag, pretty_precise_timedelta, remove_zwsp
+from ..util import i18n_tag, format_timespan, remove_zwsp
 
 
 class UtilTestCase(unittest.TestCase):
 
-    def test_pretty_precise_timedelta(self):
-        yesterday = datetime(2012, 12, 14)
-        today = datetime(2012, 12, 15)
-        tomorrow = datetime(2012, 12, 16)
-
-        # Trac core compatible signature usage.
-        self.assertEqual(pretty_precise_timedelta(None), '')
-        self.assertEqual(pretty_precise_timedelta(None, None), '')
-        self.assertEqual(pretty_precise_timedelta(today, today), '')
-        self.assertEqual(pretty_precise_timedelta(today, tomorrow), '1 day')
-        self.assertEqual(pretty_precise_timedelta(today, yesterday), '1 day')
-        self.assertEqual(pretty_precise_timedelta(tomorrow, yesterday),
-                         '2 days')
-
-        # Alternative `diff` keyword argument usage.
-        self.assertEqual(pretty_precise_timedelta(None, diff=0), '')
-        # Use ngettext with default locale (English).
-        self.assertEqual(pretty_precise_timedelta(None, diff=1), '1 second')
-        self.assertEqual(pretty_precise_timedelta(None, diff=2), '2 seconds')
-        # Limit resolution.
-        self.assertEqual(pretty_precise_timedelta(None, diff=3, resolution=4),
-                         'less than 4 seconds')
-        self.assertEqual(pretty_precise_timedelta(None, diff=86399),
-                         '23:59:59')
-        self.assertEqual(pretty_precise_timedelta(None, diff=86400),
-                         '1 day')
-        self.assertEqual(pretty_precise_timedelta(None, diff=86401),
-                         '1 day 1 second')
+    def test_format_timespan(self):
+        self.assertEqual(format_timespan(0), '')
+        self.assertEqual(format_timespan(1), '1 second')
+        self.assertEqual(format_timespan(2), '2 seconds')
+        self.assertEqual(format_timespan(119), '119 seconds')
+        self.assertEqual(format_timespan(120), '00:02:00')
+        self.assertEqual(format_timespan(86399), '23:59:59')
+        self.assertEqual(format_timespan(86400), '1 day')
+        self.assertEqual(format_timespan(86400 + 1), '1 day 1 second')
+        d42 = 86400 * 42
+        self.assertEqual(format_timespan(d42 - 1), '41 days 23:59:59')
+        self.assertEqual(format_timespan(d42), '42 days')
+        self.assertEqual(format_timespan(d42 + 119), '42 days 119 seconds')
+        self.assertEqual(format_timespan(d42 + 120), '42 days 00:02:00')
+        self.assertEqual(format_timespan(d42 + 86399), '42 days 23:59:59')
 
     def test_remove_zwsp(self):
         self.assertEqual(u'user', remove_zwsp(u'user'))

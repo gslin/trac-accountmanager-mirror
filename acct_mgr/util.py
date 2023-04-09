@@ -10,6 +10,7 @@
 #
 # Author: Matthew Good <trac@matt-good.net>
 
+from datetime import datetime
 import os
 import re
 
@@ -19,10 +20,11 @@ except ImportError:
     LazyProxy = None
 
 from trac.config import Option
-from trac.util.datefmt import format_datetime, to_datetime, utc
+from trac.util.datefmt import utc
 from trac.util.html import tag
+from trac.util.translation import dngettext
 
-from .api import _, ngettext
+from .api import _
 from .compat import basestring
 
 
@@ -54,48 +56,25 @@ def if_enabled(func):
     return wrap
 
 
-def pretty_precise_timedelta(time1, time2=None, resolution=None, diff=0):
-    """Calculate time delta between two `datetime` objects and format
-    for pretty-printing.
-
-    If either `time1` or `time2` is None, the current time will be used
-    instead.  Extending the signature of trac.util.datefmt.pretty_timedelta
-    pre-calculated timedeltas may be specified by the alternative `diff`
-    keyword argument that takes precedence if used.
-    """
-    if diff:
-        age_s = diff
-    else:
-        time1 = to_datetime(time1)
-        time2 = to_datetime(time2)
-        if time1 > time2:
-            time2, time1 = time1, time2
-        diff = time2 - time1
-        age_s = int(diff.days * 86400 + diff.seconds)
-    age_d = age_s // 86400
-
-    # DEVEL: Always reduce resolution as required by `resolution` argument.
-    if resolution:
-        if age_s < resolution:
-            delta = pretty_precise_timedelta(None, diff=resolution)
-            return _("less than %s") % delta
-    # Get a compact string by stripping non-significant parts.
-    if age_s == 0:
+def format_timespan(seconds):
+    if not seconds or seconds <= 0:
         return ''
-    # Show seconds for small time values, even in timedeltas > 1 day.
-    t = age_s - age_d * 86400
-    if 0 < t < 120:
-        t = ngettext('%(num)i second', '%(num)i seconds', t)
-        if age_d == 0:
-            return t
-    elif age_d != age_s / 86400.0:
-        t = format_datetime(age_s - age_d * 86400, format='%X', tzinfo=utc)
-        if age_d == 0:
-            return t
-    # TRANSLATOR: Pretty datetime representation, time part provided by
-    # string substitution.
-    return (ngettext("%(num)i day %%s", "%(num)i days %%s", age_d)
-            % (str(t) != '0' and t or '')).rstrip()
+
+    _dngettext = dngettext
+    total = seconds
+    days, seconds = divmod(total, 86400)
+    if days != 0:
+        datepart = _dngettext('messages', '%(num)d day', '%(num)d days', days)
+    if seconds == 0:
+        return datepart
+    if seconds < 120:
+        timepart = _dngettext('messages', '%(num)i second', '%(num)i seconds',
+                              seconds)
+    else:
+        timepart = datetime.fromtimestamp(seconds, utc).strftime('%H:%M:%S')
+    if days == 0:
+        return timepart
+    return _("%(datepart)s %(timepart)s", datepart=datepart, timepart=timepart)
 
 
 def _create_zwsp_re():

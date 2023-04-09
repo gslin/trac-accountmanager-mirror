@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TracAccountManager 0.6\n"
 "Report-Msgid-Bugs-To: hoff.st@shaas.net\n"
-"POT-Creation-Date: 2023-04-06 13:05+0000\n"
+"POT-Creation-Date: 2023-04-09 21:49+0000\n"
 "PO-Revision-Date: 2012-09-16 19:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: id_ID\n"
@@ -613,24 +613,10 @@ msgid ""
 "svnserve.conf from the default repository."
 msgstr ""
 
-#: acct_mgr/util.py:81
+#: acct_mgr/util.py:77
 #, python-format
-msgid "less than %s"
+msgid "%(datepart)s %(timepart)s"
 msgstr ""
-
-#: acct_mgr/util.py:88
-#, python-format
-msgid "%(num)i second"
-msgid_plural "%(num)i seconds"
-msgstr[0] ""
-
-#. TRANSLATOR: Pretty datetime representation, time part provided by
-#. string substitution.
-#: acct_mgr/util.py:97
-#, python-format
-msgid "%(num)i day %%s"
-msgid_plural "%(num)i days %%s"
-msgstr[0] ""
 
 #: acct_mgr/templates/genshi/account_login.html:42
 #: acct_mgr/templates/genshi/account_login.html:60
@@ -817,13 +803,13 @@ msgid "Leave old login data"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_admin.html:90
-#: acct_mgr/templates/genshi/account_config.html:916
+#: acct_mgr/templates/genshi/account_config.html:915
 #: acct_mgr/templates/genshi/account_login.html:35
 #: acct_mgr/templates/genshi/account_prefs.html:23
 #: acct_mgr/templates/genshi/account_register.html:43
 #: acct_mgr/templates/genshi/account_users.html:93
 #: acct_mgr/templates/jinja2/account_admin.html:106
-#: acct_mgr/templates/jinja2/account_config.html:1030
+#: acct_mgr/templates/jinja2/account_config.html:1029
 #: acct_mgr/templates/jinja2/account_login.html:39
 #: acct_mgr/templates/jinja2/account_prefs.html:51
 #: acct_mgr/templates/jinja2/account_register.html:52
@@ -832,12 +818,12 @@ msgid "Password:"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_admin.html:98
-#: acct_mgr/templates/genshi/account_config.html:922
+#: acct_mgr/templates/genshi/account_config.html:921
 #: acct_mgr/templates/genshi/account_prefs.html:63
 #: acct_mgr/templates/genshi/account_register.html:49
 #: acct_mgr/templates/genshi/account_users.html:101
 #: acct_mgr/templates/jinja2/account_admin.html:113
-#: acct_mgr/templates/jinja2/account_config.html:1037
+#: acct_mgr/templates/jinja2/account_config.html:1036
 #: acct_mgr/templates/jinja2/account_prefs.html:33
 #: acct_mgr/templates/jinja2/account_register.html:58
 #: acct_mgr/templates/jinja2/account_users.html:41
@@ -875,12 +861,12 @@ msgid "Skip new email verification"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_admin.html:134
-#: acct_mgr/templates/genshi/account_config.html:994
-#: acct_mgr/templates/genshi/account_config.html:998
+#: acct_mgr/templates/genshi/account_config.html:993
+#: acct_mgr/templates/genshi/account_config.html:997
 #: acct_mgr/templates/genshi/account_notification.html:59
 #: acct_mgr/templates/jinja2/account_admin.html:152
-#: acct_mgr/templates/jinja2/account_config.html:1130
-#: acct_mgr/templates/jinja2/account_config.html:1140
+#: acct_mgr/templates/jinja2/account_config.html:1129
+#: acct_mgr/templates/jinja2/account_config.html:1139
 #: acct_mgr/templates/jinja2/account_notification.html:64
 msgid "Apply changes"
 msgstr ""
@@ -1044,9 +1030,9 @@ msgid "There is currently no failed login attempt logged."
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_admin.html:266
-#: acct_mgr/templates/genshi/account_config.html:1003
+#: acct_mgr/templates/genshi/account_config.html:1002
 #: acct_mgr/templates/jinja2/account_admin.html:357
-#: acct_mgr/templates/jinja2/account_config.html:1133
+#: acct_mgr/templates/jinja2/account_config.html:1132
 msgid "Refresh"
 msgstr ""
 
@@ -1058,41 +1044,41 @@ msgid "Accounts: Configuration"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_config.html:50
-#: acct_mgr/templates/genshi/account_config.html:986
+#: acct_mgr/templates/genshi/account_config.html:985
 #: acct_mgr/templates/jinja2/account_config.html:47
-#: acct_mgr/templates/jinja2/account_config.html:1119
+#: acct_mgr/templates/jinja2/account_config.html:1118
 msgid "Apply changes and go back"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_config.html:50
 #: acct_mgr/templates/genshi/account_config.html:54
-#: acct_mgr/templates/genshi/account_config.html:986
-#: acct_mgr/templates/genshi/account_config.html:990
+#: acct_mgr/templates/genshi/account_config.html:985
+#: acct_mgr/templates/genshi/account_config.html:989
 #: acct_mgr/templates/jinja2/account_config.html:48
 #: acct_mgr/templates/jinja2/account_config.html:52
-#: acct_mgr/templates/jinja2/account_config.html:1120
-#: acct_mgr/templates/jinja2/account_config.html:1124
+#: acct_mgr/templates/jinja2/account_config.html:1119
+#: acct_mgr/templates/jinja2/account_config.html:1123
 msgid "Previous"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_config.html:54
-#: acct_mgr/templates/genshi/account_config.html:990
+#: acct_mgr/templates/genshi/account_config.html:989
 #: acct_mgr/templates/jinja2/account_config.html:51
-#: acct_mgr/templates/jinja2/account_config.html:1123
+#: acct_mgr/templates/jinja2/account_config.html:1122
 msgid "Go back"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_config.html:57
-#: acct_mgr/templates/genshi/account_config.html:1007
+#: acct_mgr/templates/genshi/account_config.html:1006
 #: acct_mgr/templates/jinja2/account_config.html:57
-#: acct_mgr/templates/jinja2/account_config.html:1135
+#: acct_mgr/templates/jinja2/account_config.html:1134
 msgid "Apply changes and go on"
 msgstr ""
 
 #: acct_mgr/templates/genshi/account_config.html:57
-#: acct_mgr/templates/genshi/account_config.html:1007
+#: acct_mgr/templates/genshi/account_config.html:1006
 #: acct_mgr/templates/jinja2/account_config.html:58
-#: acct_mgr/templates/jinja2/account_config.html:1136
+#: acct_mgr/templates/jinja2/account_config.html:1135
 msgid "Next"
 msgstr ""
 
@@ -1101,13 +1087,13 @@ msgstr ""
 #: acct_mgr/templates/genshi/account_config.html:553
 #: acct_mgr/templates/genshi/account_config.html:601
 #: acct_mgr/templates/genshi/account_config.html:750
-#: acct_mgr/templates/genshi/account_config.html:879
+#: acct_mgr/templates/genshi/account_config.html:878
 #: acct_mgr/templates/jinja2/account_config.html:68
 #: acct_mgr/templates/jinja2/account_config.html:285
 #: acct_mgr/templates/jinja2/account_config.html:610
 #: acct_mgr/templates/jinja2/account_config.html:667
 #: acct_mgr/templates/jinja2/account_config.html:838
-#: acct_mgr/templates/jinja2/account_config.html:982
+#: acct_mgr/templates/jinja2/account_config.html:981
 #, python-format
 msgid "Step %(step)s: %(label)s"
 msgstr ""
@@ -1337,13 +1323,13 @@ msgstr ""
 #: acct_mgr/templates/genshi/account_config.html:362
 #: acct_mgr/templates/genshi/account_config.html:385
 #: acct_mgr/templates/genshi/account_config.html:416
-#: acct_mgr/templates/genshi/account_config.html:966
+#: acct_mgr/templates/genshi/account_config.html:965
 #: acct_mgr/templates/jinja2/account_config.html:328
 #: acct_mgr/templates/jinja2/account_config.html:373
 #: acct_mgr/templates/jinja2/account_config.html:396
 #: acct_mgr/templates/jinja2/account_config.html:419
 #: acct_mgr/templates/jinja2/account_config.html:453
-#: acct_mgr/templates/jinja2/account_config.html:1097
+#: acct_mgr/templates/jinja2/account_config.html:1096
 msgid "Details (Preview)"
 msgstr ""
 
@@ -1736,33 +1722,33 @@ msgstr ""
 msgid "Upper lock time limit: [1:] seconds [2:(%(time)s)]"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:868
-#: acct_mgr/templates/jinja2/account_config.html:970
+#: acct_mgr/templates/genshi/account_config.html:867
+#: acct_mgr/templates/jinja2/account_config.html:969
 msgid "This is relevant only with a progression factor > 1."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:883
-#: acct_mgr/templates/jinja2/account_config.html:987
+#: acct_mgr/templates/genshi/account_config.html:882
+#: acct_mgr/templates/jinja2/account_config.html:986
 msgid "Objective for additional preparation"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:884
-#: acct_mgr/templates/jinja2/account_config.html:989
+#: acct_mgr/templates/genshi/account_config.html:883
+#: acct_mgr/templates/jinja2/account_config.html:988
 msgid "Enable yourself to proceed beyond this initial setup."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:885
-#: acct_mgr/templates/jinja2/account_config.html:991
+#: acct_mgr/templates/genshi/account_config.html:884
+#: acct_mgr/templates/jinja2/account_config.html:990
 msgid "Initial Admin Account"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:887
-#: acct_mgr/templates/jinja2/account_config.html:993
+#: acct_mgr/templates/genshi/account_config.html:886
+#: acct_mgr/templates/jinja2/account_config.html:992
 msgid "Add Admin Account:"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:888
-#: acct_mgr/templates/jinja2/account_config.html:996
+#: acct_mgr/templates/genshi/account_config.html:887
+#: acct_mgr/templates/jinja2/account_config.html:995
 msgid ""
 "The user will get [1:TRAC_ADMIN] assigned, that inherits all available "
 "permissions. One such account is required to configure Trac via the admin"
@@ -1770,8 +1756,8 @@ msgid ""
 "user accounts on your own later via the Accounts admin panel."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:896
-#: acct_mgr/templates/jinja2/account_config.html:1007
+#: acct_mgr/templates/genshi/account_config.html:895
+#: acct_mgr/templates/jinja2/account_config.html:1006
 msgid ""
 "In detail: AccountManagerPlugin requires [1:ACCTMGR_USER_ADMIN] for "
 "regular user administration, [2:ACCTMGR_CONFIG_ADMIN] for viewing these "
@@ -1780,12 +1766,12 @@ msgid ""
 "[4:PERMISSION_GRANT] inherited by [5:PERMISSION_ADMIN] too."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:907
+#: acct_mgr/templates/genshi/account_config.html:906
 #: acct_mgr/templates/genshi/account_login.html:30
 #: acct_mgr/templates/genshi/account_register.html:33
 #: acct_mgr/templates/genshi/account_reset_password.html:29
 #: acct_mgr/templates/genshi/account_users.html:83
-#: acct_mgr/templates/jinja2/account_config.html:1018
+#: acct_mgr/templates/jinja2/account_config.html:1017
 #: acct_mgr/templates/jinja2/account_login.html:33
 #: acct_mgr/templates/jinja2/account_register.html:40
 #: acct_mgr/templates/jinja2/account_reset_password.html:35
@@ -1793,48 +1779,48 @@ msgstr ""
 msgid "Username:"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:911
+#: acct_mgr/templates/genshi/account_config.html:910
 #: acct_mgr/templates/genshi/account_register.html:38
 #: acct_mgr/templates/genshi/account_users.html:87
-#: acct_mgr/templates/jinja2/account_config.html:1024
+#: acct_mgr/templates/jinja2/account_config.html:1023
 #: acct_mgr/templates/jinja2/account_register.html:46
 #: acct_mgr/templates/jinja2/account_users.html:27
 msgid "Only lowercase usernames allowed"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:928
-#: acct_mgr/templates/jinja2/account_config.html:1044
+#: acct_mgr/templates/genshi/account_config.html:927
+#: acct_mgr/templates/jinja2/account_config.html:1043
 msgid ""
 "Please take care, that the username is known by the HTTP authentication "
 "provider."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:933
-#: acct_mgr/templates/jinja2/account_config.html:1050
+#: acct_mgr/templates/genshi/account_config.html:932
+#: acct_mgr/templates/jinja2/account_config.html:1049
 msgid ""
 "Please take care for a valid username, because no configured password "
 "store supports creating a new account."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:939
+#: acct_mgr/templates/genshi/account_config.html:938
 #: acct_mgr/templates/genshi/account_users.html:130
-#: acct_mgr/templates/jinja2/account_config.html:1056
+#: acct_mgr/templates/jinja2/account_config.html:1055
 #: acct_mgr/templates/jinja2/account_users.html:69
 msgid " Add "
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:943
-#: acct_mgr/templates/jinja2/account_config.html:1062
+#: acct_mgr/templates/genshi/account_config.html:942
+#: acct_mgr/templates/jinja2/account_config.html:1061
 msgid "Check-up"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:952
-#: acct_mgr/templates/jinja2/account_config.html:1078
+#: acct_mgr/templates/genshi/account_config.html:951
+#: acct_mgr/templates/jinja2/account_config.html:1077
 msgid "Please resolve all issues marked as critical."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:956
-#: acct_mgr/templates/jinja2/account_config.html:1086
+#: acct_mgr/templates/genshi/account_config.html:955
+#: acct_mgr/templates/jinja2/account_config.html:1085
 msgid ""
 "By now you did almost finish AccountManagerPlugin configuration, but any "
 "changes are temporary yet. Please test and adjust the configuration as "
@@ -1842,28 +1828,28 @@ msgid ""
 " only if you really want to preserve them permanently."
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:994
-#: acct_mgr/templates/jinja2/account_config.html:1129
+#: acct_mgr/templates/genshi/account_config.html:993
+#: acct_mgr/templates/jinja2/account_config.html:1128
 msgid "Stay on page"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:998
-#: acct_mgr/templates/jinja2/account_config.html:1139
+#: acct_mgr/templates/genshi/account_config.html:997
+#: acct_mgr/templates/jinja2/account_config.html:1138
 msgid "Save changes and exit wizard"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:1003
-#: acct_mgr/templates/jinja2/account_config.html:1132
+#: acct_mgr/templates/genshi/account_config.html:1002
+#: acct_mgr/templates/jinja2/account_config.html:1131
 msgid "Drop unsaved changes"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:1011
-#: acct_mgr/templates/jinja2/account_config.html:1143
+#: acct_mgr/templates/genshi/account_config.html:1010
+#: acct_mgr/templates/jinja2/account_config.html:1142
 msgid "Drop changes and exit wizard"
 msgstr ""
 
-#: acct_mgr/templates/genshi/account_config.html:1011
-#: acct_mgr/templates/jinja2/account_config.html:1144
+#: acct_mgr/templates/genshi/account_config.html:1010
+#: acct_mgr/templates/jinja2/account_config.html:1143
 msgid "Cancel"
 msgstr ""
 
