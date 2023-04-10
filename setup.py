@@ -27,7 +27,11 @@ setup(
     url='https://trac-hacks.org/wiki/AccountManagerPlugin',
     description='User account management plugin for Trac',
     license='3-Clause BSD',
-    classifiers=['Framework :: Trac'],
+    classifiers=[
+        'Framework :: Trac',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+    ],
     packages=find_packages(exclude=['*.tests*']),
     package_data={
         'acct_mgr': [
