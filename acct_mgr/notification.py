@@ -21,7 +21,7 @@ from trac.util.translation import deactivate, dgettext, reactivate
 from trac.web.chrome import Chrome
 
 from .api import IAccountChangeListener, _
-from .compat import iteritems
+from .compat import iteritems, use_jinja2
 from .util import i18n_tag
 
 
@@ -168,15 +168,18 @@ class AccountNotificationFormatter(Component):
                 'link': self.env.abs_href.verify_email(token=token, verify=1)
             }
             template_name = 'account_verify_email.txt'
-        return self._format_body(data, template_name)
+        t = deactivate()  # don't translate the e-mail stream
+        try:
+            return self._format_body(data, template_name)
+        finally:
+            reactivate(t)
 
     # Internal methods
 
     def _format_body(self, data, template_name):
         chrome = Chrome(self.env)
         data = chrome.populate_data(None, data)
-        t = deactivate()  # don't translate the e-mail stream
-        if hasattr(chrome, 'jenv'):
+        if use_jinja2:
             template = chrome.load_template(template_name, text=True)
             body = chrome.render_template_string(template, data, text=True)
             return body.encode('utf-8')
@@ -184,7 +187,6 @@ class AccountNotificationFormatter(Component):
             template = chrome.load_template(template_name, method='text')
             stream = template.generate(**data)
             return stream.render('text', encoding='utf-8')
-        reactivate(t)
 
 
 class AccountChangeNotificationAdminPanel(Component):
